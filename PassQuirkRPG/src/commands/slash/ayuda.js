@@ -19,9 +19,9 @@ module.exports = {
         });
 
         const replyOptions = { embeds: [mensaje.embed], components: [], ephemeral: true };
-
+        
         if (interaction.deferred || interaction.replied) {
-            await interaction.followUp(replyOptions);
+            await interaction.editReply(replyOptions);
         } else {
             await interaction.reply(replyOptions);
         }

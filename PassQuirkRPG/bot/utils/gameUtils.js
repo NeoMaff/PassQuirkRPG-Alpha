@@ -1,6 +1,7 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, StringSelectMenuBuilder, ButtonStyle } = require('discord.js');
 const config = require('../config/config');
 const helpers = require('./helpers');
+const RARITIES = require('../../src/data/rarities');
 
 /**
  * Utilidades del juego para el bot PassQuirk RPG
@@ -230,6 +231,12 @@ class GameUtils {
      * @returns {string}
      */
     static getRarityEmoji(rarity) {
+        if (!rarity) return config.emojis.common;
+        const key = rarity.toLowerCase();
+
+        // Check official rarities first
+        if (RARITIES[key]) return RARITIES[key].emoji;
+
         const emojis = {
             'common': config.emojis.common,
             'uncommon': config.emojis.uncommon,
@@ -238,7 +245,7 @@ class GameUtils {
             'legendary': config.emojis.legendary,
             'mythic': config.emojis.mythic
         };
-        return emojis[rarity] || emojis.common;
+        return emojis[key] || emojis.common;
     }
 
     /**

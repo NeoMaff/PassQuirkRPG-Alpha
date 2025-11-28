@@ -78,7 +78,7 @@ function generarMensajeEmbed({
     }
 
     return {
-        embed,
+        embeds: [embed],
         components,
         files
     };

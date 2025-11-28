@@ -89,7 +89,7 @@ const EMOJIS = {
     PROFILE: '👤',
     LEVEL: '⭐',
     EXP: '✨',
-    GOLD: '💰',
+    GOLD: '<:PassCoin:1441951548719759511>',
     GEMS: '💎',
     ENERGY: '🔋',
     HP: '❤️',
@@ -114,7 +114,7 @@ const EMOJIS = {
         INTELLIGENCE: '🧠',
         LUCK: '🍀',
         EXPERIENCE: '✨',
-        GOLD: '💰',
+        GOLD: '<:PassCoin:1441951548719759511>',
         BONUS: '📈',
         CHART: '📊'
     },
@@ -207,7 +207,7 @@ class OfficialEmbedBuilder {
      * Establece la descripción con formato oficial
      */
     setOfficialDescription(description) {
-        this.embed.setDescription(description);
+        this.embed.setDescription(description || null);
         return this;
     }
 
@@ -285,6 +285,14 @@ class OfficialEmbedBuilder {
         }
         
         return `${bar} ${current}/${max} (${Math.floor(percentage)}%)`;
+    }
+
+    /**
+     * Establece la imagen miniatura
+     */
+    setThumbnail(url) {
+        this.embed.setThumbnail(url);
+        return this;
     }
 
     /**
@@ -526,6 +534,63 @@ function formatNumber(num) {
     return num.toString();
 }
 
+/**
+ * 👤 Embed de Perfil Oficial
+ */
+class ProfileEmbed extends OfficialEmbedBuilder {
+    constructor(user, stats) {
+        super();
+        this.setOfficialStyle('profile');
+        this.setOfficialTitle(`Perfil de ${user.username}`, EMOJIS.PROFILE);
+        
+        const rankEmoji = stats.rank.includes('Legendario') ? '🌟' : 
+                         stats.rank.includes('Maestro') ? '💎' : '🌱';
+
+        this.setOfficialDescription(
+            `**👤 Raza:** ${stats.race || 'Desconocida'}\n` +
+            `**⚔️ Clase:** ${stats.class || 'Desconocida'}\n` +
+            `**👑 Reino:** ${stats.kingdom || 'Nómada'}\n` +
+            `**${rankEmoji} Rango:** ${stats.rank}\n` +
+            `**⏱️ Tiempo de juego:** ${stats.playtime} horas`
+        );
+
+        // Estadísticas Principales
+        this.addOfficialField(
+            '📊 Progreso',
+            `${EMOJIS.LEVEL} **Nivel:** ${stats.level}\n` +
+            `${EMOJIS.EXP} **EXP:** ${formatNumber(stats.xp)} / ${formatNumber(stats.xpToNext)}\n` +
+            `${this.createProgressBar(stats.xp, stats.xpToNext)}`,
+            false
+        );
+
+        // Economía y Recursos
+        this.addOfficialField(
+            '💰 Economía',
+            `${EMOJIS.GOLD} **PassCoins:** ${formatNumber(stats.balance)}\n` +
+            `${EMOJIS.GEMS} **Gemas:** ${formatNumber(stats.gems)}`,
+            true
+        );
+
+        // Estadísticas de Combate
+        this.addOfficialField(
+            '⚔️ Registro de Combate',
+            `🏆 **Victorias:** ${stats.victories}\n` +
+            `💀 **Derrotas:** ${stats.defeats}\n` +
+            `⚔️ **Batallas:** ${stats.battles}`,
+            true
+        );
+
+        // Logros recientes
+        if (stats.achievements && stats.achievements.length > 0) {
+            const recentAchievements = stats.achievements.slice(0, 3).map(a => `🏆 ${a}`).join('\n');
+            this.addOfficialField('🏅 Logros Recientes', recentAchievements, false);
+        }
+
+        // Avatar del usuario
+        this.embed.setThumbnail(user.displayAvatarURL({ dynamic: true, size: 256 }));
+    }
+}
+
 module.exports = {
     COLORS,
     EMOJIS,
@@ -533,6 +598,7 @@ module.exports = {
     OfficialEmbedBuilder,
     OfficialButtonBuilder,
     OfficialSelectMenuBuilder,
+    ProfileEmbed,
     getClassEmoji,
     getExpForNextLevel,
     getPlayerRank,

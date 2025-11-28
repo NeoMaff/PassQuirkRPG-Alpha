@@ -1,462 +1,587 @@
-// 📊 DATOS OFICIALES PASSQUIRK - Información del sistema RPG
-
 /**
- * Clases disponibles en PassQuirk RPG (Oficiales según documentación)
+ * 🌟 PassQuirk RPG - Datos Oficiales
+ * Basado en la documentación oficial de GitBook
+ * 
+ * Este archivo contiene todos los datos oficiales del juego:
+ * - PassQuirks y sus clases compatibles
+ * - Quirks por clase con habilidades específicas
+ * - Razas y sus bonificadores
+ * - Enemigos por zona y rareza
+ * - Objetos y equipamiento
+ * - Sistema de rarezas
  */
-const CLASSES = {
-    celestial: {
-        name: 'Celestial',
-        description: 'Ser de luz con habilidades curativas y ataques sagrados de área',
-        emoji: '🪽',
-        philosophy: 'La luz sagrada guía mi camino',
-        stats: {
-            hp: 100,
-            mp: 120,
-            attack: 10,
-            defense: 12,
-            speed: 11,
-            intelligence: 15,
-            wisdom: 16,
-            resistance: 15
-        },
-        skills: ['Divine Healing', 'Sacred Light', 'Purification'],
-        compatiblePassQuirks: ['Fénix', 'Agua', 'Vacío', 'Caos', 'Luz']
+
+const BASE_URL = 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images';
+
+const ASSETS = {
+    classes: {
+        alma_naciente: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/class_alma_naciente.png',
+        ancestral: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/class_ancestral.png',
+        celestial: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/class_celestial.png',
+        fenix: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/class_fenix.png',
+        nigromante: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/class_nigromante.png',
+        shinobi: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/class_shinobi.png',
+        void: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/class_void.png'
     },
-    fenix: {
-        name: 'Fénix',
-        description: 'Renace tras ser derrotado; domina el fuego y el resurgir explosivo',
-        emoji: '🔥',
-        philosophy: 'De las cenizas renazco más fuerte',
-        stats: {
-            hp: 130,
-            mp: 90,
-            attack: 16,
-            defense: 14,
-            speed: 12,
-            resistance: 16
-        },
-        skills: ['Phoenix Rebirth', 'Flame Mastery', 'Explosive Revival'],
-        compatiblePassQuirks: ['Fénix', 'Trueno', 'Dragón', 'Caos', 'Luz']
+    races: {
+        elfos: `${BASE_URL}/race_elfos.png`,
+        enanos: `${BASE_URL}/race_enanos.png`,
+        humanos: `${BASE_URL}/race_humanos.png`,
+        ogros: `${BASE_URL}/race_ogros.png`
     },
-    berserker: {
-        name: 'Berserker',
-        description: 'Guerrero desatado con fuerza bruta creciente cuanto más daño recibe',
-        emoji: '⚔️',
-        philosophy: 'La furia es mi fuerza',
-        stats: {
-            hp: 140,
-            mp: 50,
-            attack: 17,
-            defense: 14,
-            speed: 10,
-            strength: 16
-        },
-        skills: ['Berserker Rage', 'Unstoppable Force', 'Blood Frenzy'],
-        compatiblePassQuirks: ['Tierra', 'Bestia', 'Caos', 'Luz']
+    icons: {
+        attack: `${BASE_URL}/id_emoji_attack_basic.png`,
+        classes: `${BASE_URL}/id_emoji_classes.png`,
+        power_basic: `${BASE_URL}/id_emoji_power_basic.png`,
+        power_special: `${BASE_URL}/id_emoji_power_special.png`,
+        races: `${BASE_URL}/id_emoji_races.png`
     },
-    inmortal: {
-        name: 'Inmortal',
-        description: 'No puede morir fácilmente; regenera y resiste efectos mortales',
-        emoji: '☠️',
-        philosophy: 'La muerte es solo una ilusión',
-        stats: {
-            hp: 160,
-            mp: 70,
-            attack: 12,
-            defense: 17,
-            speed: 8,
-            resistance: 17,
-            vitality: 16
-        },
-        skills: ['Immortal Body', 'Death Resistance', 'Eternal Endurance'],
-        compatiblePassQuirks: ['Tierra', 'Dragón', 'Agua', 'Caos', 'Luz']
+    stats: {
+        alma_naciente: `${BASE_URL}/stats_base_alma_naciente.png`,
+        ancestral: `${BASE_URL}/stats_base_ancestral.jpeg`,
+        celestial: `${BASE_URL}/stats_base_celestial.jpeg`,
+        fenix: `${BASE_URL}/stats_base_fenix.jpeg`,
+        nigromante: `${BASE_URL}/stats_base_nigromante.jpeg`,
+        shinobi: `${BASE_URL}/stats_base_shinobi.jpeg`,
+        void: `${BASE_URL}/stats_base_void.jpeg`
     },
-    demon: {
-        name: 'Demon',
-        description: 'Poder oscuro, drenaje de vida y habilidades infernales',
-        emoji: '👹',
-        philosophy: 'El poder oscuro fluye en mis venas',
-        stats: {
-            hp: 110,
-            mp: 100,
-            attack: 16,
-            defense: 10,
-            speed: 13,
-            intelligence: 16,
-            magic: 15
+    powers: {
+        celestial: {
+            basic: `${BASE_URL}/power_celestial_basic.png`,
+            power: `${BASE_URL}/power_celestial_power.png`,
+            special: `${BASE_URL}/power_celestial_special.png`
         },
-        skills: ['Life Drain', 'Dark Magic', 'Infernal Power'],
-        compatiblePassQuirks: ['Vendaval', 'Oscuridad', 'Bestia', 'Vacío', 'Caos', 'Luz']
-    },
-    sombra: {
-        name: 'Sombra',
-        description: 'Ninja silencioso y letal; experto en clones, humo y ataques críticos',
-        emoji: '⚔️🌀',
-        philosophy: 'Las sombras son mis aliadas',
-        stats: {
-            hp: 95,
-            mp: 80,
-            attack: 15,
-            defense: 9,
-            speed: 17,
-            dexterity: 16,
-            luck: 16
+        fenix: {
+            basic: `${BASE_URL}/power_fenix_basic.png`,
+            power: `${BASE_URL}/power_fenix_power.png`,
+            special: `${BASE_URL}/power_fenix_special.png`
         },
-        skills: ['Shadow Clone', 'Stealth Master', 'Critical Strike'],
-        compatiblePassQuirks: ['Vendaval', 'Oscuridad', 'Trueno', 'Caos', 'Luz']
+        void: {
+            basic: `${BASE_URL}/power_void_basic.png`,
+            power: `${BASE_URL}/power_void_power.png`,
+            special: `${BASE_URL}/power_void_special.png`
+        },
+        shinobi: {
+            basic: `${BASE_URL}/power_shinobi_basic.png`,
+            power: `${BASE_URL}/power_shinobi_power.png`,
+            special: `${BASE_URL}/power_shinobi_special.png`
+        },
+        alma_naciente: {
+            basic: `${BASE_URL}/power_alma_naciente_basic.png`,
+            power: `${BASE_URL}/power_alma_naciente_power.png`,
+            special: `${BASE_URL}/power_alma_naciente_special.png`
+        },
+        nigromante: {
+            basic: `${BASE_URL}/power_nigromante_basic.png`,
+            power: `${BASE_URL}/power_nigromante_power.png`,
+            special: `${BASE_URL}/power_nigromante_special.png`
+        },
+        ancestral: {
+            basic: `${BASE_URL}/power_ancestral_basic.png`,
+            power: `${BASE_URL}/power_ancestral_power.png`,
+            special: `${BASE_URL}/power_ancestral_special.png`
+        }
     }
 };
 
-/**
- * PassQuirks Oficiales - Habilidades especiales únicas
- */
+// 🧬 Razas del Juego
+const RACES = {
+    "HUMANOS": {
+        name: "Humanos",
+        emoji: "<:HumanosRazasPassQuirk:1443592330014883840>",
+        description: "Versátiles y equilibrados. Se adaptan a cualquier situación.",
+        image: 'e:\\PassQuirk\\PassQuirkRPG\\Documentación - Juego\\Assets - PassQuirkRPG\\Razas\\Humanos - Razas - PassQuirk.png',
+        multipliers: {
+            hp: 1.10,
+            mp: 1.10,
+            attack: 1.10,
+            defense: 1.0,
+            speed: 1.05,
+            magic_power: 1.10, // Multiplicador de daño mágico
+            exp: 1.10
+        },
+        bonuses: ["+10% HP, Energía, ATK", "+10% Poder Mágico", "+5% Velocidad", "+10% EXP"]
+    },
+    "OGROS": {
+        name: "Ogros",
+        emoji: "<:ogros:1442155305491234947>",
+        description: "Fuerza bruta y resistencia inigualable.",
+        image: 'e:\\PassQuirk\\PassQuirkRPG\\Documentación - Juego\\Assets - PassQuirkRPG\\Razas\\Ogros - Razas - PassQuirk.png',
+        multipliers: {
+            hp: 1.40,
+            mp: 1.30,
+            attack: 1.0,
+            defense: 1.20,
+            speed: 0.80,
+            magic_power: 0.90,
+            mp_regen_flat: 3 // +3 por turno
+        },
+        bonuses: ["+40% HP", "+30% Energía", "+20% Defensa", "+3 Regen Energía", "-20% Velocidad"]
+    },
+    "ELFOS": {
+        name: "Elfos",
+        emoji: "<:elfos:1442155303985610762>",
+        description: "Ágiles y afines a la magia y la naturaleza.",
+        image: 'e:\\PassQuirk\\PassQuirkRPG\\Documentación - Juego\\Assets - PassQuirkRPG\\Razas\\Elfos - Razas - PassQuirk.png',
+        multipliers: {
+            hp: 0.75,
+            mp: 1.0, // Base MP no cambia segun doc (solo regen)
+            attack: 0.85, // -15% ATK Físico
+            defense: 0.80,
+            speed: 1.10,
+            magic_power: 1.40,
+            mp_regen: 1.25,
+            cost_reduction: 0.80 // -20% coste
+        },
+        bonuses: ["+40% Poder Mágico", "+25% Regen Energía", "-20% Coste Habilidades", "+10% Velocidad", "-25% HP"]
+    },
+    "ENANOS": {
+        name: "Enanos",
+        emoji: "<:enanos:1442155302651822250>",
+        description: "Resistentes y expertos en forja y tecnología.",
+        image: 'e:\\PassQuirk\\PassQuirkRPG\\Documentación - Juego\\Assets - PassQuirkRPG\\Razas\\Enanos - Razas - PassQuirk.png',
+        multipliers: {
+            hp: 0.80,
+            mp: 1.0,
+            attack: 1.15, // +15% ATK Físico
+            defense: 1.0,
+            speed: 1.30,
+            magic_power: 0.85,
+            crit_chance_flat: 20 // +20% prob
+        },
+        bonuses: ["+30% Velocidad", "+20% Prob. Crítico", "+15% ATK Físico", "+25% Daño Armas", "-20% HP"]
+    }
+};
+
+// 🎮 Clases Base del Juego (Actualizadas con datos de GitBook y estadisticas.md)
+const BASE_CLASSES = {
+    "CELESTIAL": {
+        emoji: "<:celestial:1441941085436776608>",
+        description: "Soporte + DPS Mágico. Magia Sagrada + Área.",
+        image: ASSETS.classes.celestial,
+        role: "Soporte + DPS Mágico",
+        style: "Magia Sagrada + Área",
+        // Stats derivados de estadisticas.md
+        baseStats: { hp: 100, mp: 100, attack: 10, defense: 7, speed: 10 },
+        statsImage: ASSETS.stats.celestial,
+        abilities: {
+            basic: { 
+                name: "Rayo Sagrado", 
+                damage: "150% ATK", 
+                cost: 10, 
+                target: "1 enemigo", 
+                cooldown: 0, 
+                image: ASSETS.powers.celestial.basic,
+                crit: "300% ATK"
+            },
+            power: { 
+                name: "Destello Divino", 
+                damage: "280% ATK", 
+                effect: "Cura 15% HP máx aliado", 
+                cost: 30, 
+                target: "1 enemigo + 1 aliado", 
+                cooldown: 2, 
+                image: ASSETS.powers.celestial.power,
+                crit: "560% ATK"
+            },
+            special: { 
+                name: "Juicio Celestial", 
+                damage: "450% ATK (Dividido)", 
+                effect: "Purifica 1 buff enemigo", 
+                cost: 70, 
+                target: "Todos (Área)", 
+                cooldown: 5, 
+                image: ASSETS.powers.celestial.special,
+                crit: "900% ATK"
+            }
+        }
+    },
+    "FÉNIX": {
+        emoji: "<:fenix:1441938882206765247>",
+        description: "DPS + Supervivencia. Fuego + Regeneración.",
+        image: ASSETS.classes.fenix,
+        role: "DPS + Supervivencia",
+        style: "Fuego + Regeneración",
+        baseStats: { hp: 110, mp: 90, attack: 11, defense: 5, speed: 10 },
+        statsImage: ASSETS.stats.fenix,
+        abilities: {
+            basic: { 
+                name: "Garra Ígnea", 
+                damage: "150% ATK", 
+                cost: 12, 
+                target: "1 enemigo", 
+                cooldown: 0, 
+                image: ASSETS.powers.fenix.basic,
+                crit: "300% ATK"
+            },
+            power: { 
+                name: "Llamarada Vital", 
+                damage: "250% ATK", 
+                effect: "Quema (50% ATK/turno x2) + Cura 10% HP máx (1 vez)", 
+                cost: 30, 
+                target: "1 enemigo", 
+                cooldown: 3, 
+                image: ASSETS.powers.fenix.power,
+                crit: "500% ATK"
+            },
+            special: { 
+                name: "Renacimiento en Cenizas", 
+                damage: "400% ATK", 
+                effect: "Pasiva: Revive con 35% HP (1 vez)", 
+                cost: 70, 
+                target: "Todos (Área)", 
+                cooldown: 6, 
+                image: ASSETS.powers.fenix.special,
+                crit: "800% ATK"
+            }
+        }
+    },
+    "VOID": {
+        emoji: "<:void:1441941115543752755>",
+        description: "DPS Largo Alcance. Magia Espacial + Penetración.",
+        image: ASSETS.classes.void,
+        role: "DPS Largo Alcance",
+        style: "Magia Espacial + Penetración",
+        baseStats: { hp: 95, mp: 110, attack: 12, defense: 4, speed: 10 },
+        statsImage: ASSETS.stats.void,
+        abilities: {
+            basic: { 
+                name: "Pulso del Vacío", 
+                damage: "150% ATK", 
+                cost: 10, 
+                target: "1 enemigo", 
+                cooldown: 0, 
+                image: ASSETS.powers.void.basic,
+                crit: "300% ATK"
+            },
+            power: { 
+                name: "Grieta Espacial", 
+                damage: "360% ATK (3 rayos x 120%)", 
+                effect: "Ignora 15% DEF", 
+                cost: 30, 
+                target: "1-3 enemigos", 
+                cooldown: 3, 
+                image: ASSETS.powers.void.power,
+                crit: "240% ATK por rayo"
+            },
+            special: { 
+                name: "Colapso Gravitatorio", 
+                damage: "450% ATK", 
+                effect: "-30% Velocidad x 2 turnos", 
+                cost: 70, 
+                target: "Todos (Área)", 
+                cooldown: 6, 
+                image: ASSETS.powers.void.special,
+                crit: "900% ATK"
+            }
+        }
+    },
+    "SHINOBI": {
+        emoji: "<:shinobi:1441941114771734630>",
+        description: "Asesino + Movilidad. Cuerpo a Cuerpo + Magia.",
+        image: ASSETS.classes.shinobi,
+        role: "Asesino + Movilidad",
+        style: "Cuerpo a Cuerpo + Magia",
+        baseStats: { hp: 90, mp: 100, attack: 13, defense: 4, speed: 10 },
+        statsImage: ASSETS.stats.shinobi,
+        abilities: {
+            basic: { 
+                name: "Corte Sombra", 
+                damage: "150% ATK", 
+                cost: 15, 
+                target: "1 enemigo", 
+                cooldown: 0, 
+                image: ASSETS.powers.shinobi.basic,
+                crit: "300% ATK (20% Prob Base)"
+            },
+            power: { 
+                name: "Sombra Ígnea", 
+                damage: "280% ATK", 
+                effect: "Gana +20% Evasión vs próximo ataque", 
+                cost: 30, 
+                target: "1 enemigo", 
+                cooldown: 2, 
+                image: ASSETS.powers.shinobi.power,
+                crit: "560% ATK (35% Prob)"
+            },
+            special: { 
+                name: "Espada Planetaria", 
+                damage: "500% ATK", 
+                effect: "Atraviesa (100% / 60%)", 
+                cost: 70, 
+                target: "Línea (Max 2)", 
+                cooldown: 5, 
+                image: ASSETS.powers.shinobi.special,
+                crit: "GARANTIZADO 1000% ATK"
+            }
+        }
+    },
+    "ALMA NACIENTE": {
+        emoji: "<:alma_naciente:1441941113555521677>",
+        description: "Bruiser + Ki. Ki + Magia Oscura.",
+        image: ASSETS.classes.alma_naciente,
+        role: "Bruiser + Ki",
+        style: "Ki + Magia Oscura",
+        baseStats: { hp: 105, mp: 95, attack: 11, defense: 6, speed: 10 },
+        statsImage: ASSETS.stats.alma_naciente,
+        abilities: {
+            basic: { 
+                name: "Puño Ki", 
+                damage: "150% ATK", 
+                cost: 12, 
+                target: "1 enemigo", 
+                cooldown: 0, 
+                image: ASSETS.powers.alma_naciente.basic,
+                crit: "300% ATK"
+            },
+            power: { 
+                name: "Energía de Ki", 
+                damage: "360-480% ATK (3 golpes aleatorios)", 
+                effect: "Recupera 15 Energía", 
+                cost: 30, 
+                target: "1 enemigo", 
+                cooldown: 3, 
+                image: ASSETS.powers.alma_naciente.power,
+                crit: "Cada golpe x2"
+            },
+            special: { 
+                name: "Cataclismo Cósmico", 
+                damage: "350% ATK Base", 
+                effect: "+1.5% daño por 1% HP perdido", 
+                cost: 70, 
+                target: "1 enemigo", 
+                cooldown: 6, 
+                image: ASSETS.powers.alma_naciente.special,
+                crit: "Base x2 + Escalado"
+            }
+        }
+    },
+    "NIGROMANTE": {
+        emoji: "<:nigromante:1441941112301289523>",
+        description: "Tanque + Invocación. Magia Negra + Sacrificio.",
+        image: ASSETS.classes.nigromante,
+        role: "Tanque + Invocación",
+        style: "Magia Negra + Sacrificio",
+        baseStats: { hp: 115, mp: 90, attack: 9, defense: 8, speed: 10 },
+        statsImage: ASSETS.stats.nigromante,
+        abilities: {
+            basic: { 
+                name: "Orbe Necrótico", 
+                damage: "150% ATK", 
+                cost: 10, 
+                target: "1 enemigo", 
+                cooldown: 0, 
+                image: ASSETS.powers.nigromante.basic,
+                crit: "300% ATK"
+            },
+            power: { 
+                name: "Magia Negra", 
+                damage: "300% ATK", 
+                effect: "Lifesteal 12% + Stack Esencia", 
+                cost: 30, 
+                target: "1 enemigo", 
+                cooldown: 2, 
+                image: ASSETS.powers.nigromante.power,
+                crit: "600% ATK"
+            },
+            special: { 
+                name: "Invocación de Muerte", 
+                damage: "550% ATK", 
+                effect: "Ejecuta si HP < 25%. Coste: 35% HP + 3 Esencias", 
+                cost: 70, 
+                target: "1 enemigo", 
+                cooldown: 8, 
+                image: ASSETS.powers.nigromante.special,
+                crit: "1100% ATK"
+            }
+        }
+    },
+    "ANCESTRAL": {
+        emoji: "<:ancestral:1441941110648995891>",
+        description: "Counter Universal + Híbrido. Adaptativo + Magia Antigua.",
+        image: ASSETS.classes.ancestral,
+        role: "Counter Universal + Híbrido",
+        style: "Adaptativo + Magia Antigua",
+        selectable: false, // NO seleccionable en tutorial
+        baseStats: { hp: 120, mp: 120, attack: 14, defense: 9, speed: 12 },
+        statsImage: ASSETS.stats.ancestral,
+        abilities: {
+            basic: { 
+                name: "Golpe Primordial", 
+                damage: "180% ATK", 
+                cost: 10, 
+                target: "1 enemigo", 
+                cooldown: 0, 
+                image: ASSETS.powers.ancestral.basic,
+                crit: "360% ATK"
+            },
+            power: { 
+                name: "Magia del Antecesor", 
+                damage: "320% ATK", 
+                effect: "Ignora 25% DEF + Counter Pasivo", 
+                cost: 30, 
+                target: "1 enemigo", 
+                cooldown: 2, 
+                image: ASSETS.powers.ancestral.power,
+                crit: "640% ATK"
+            },
+            special: { 
+                name: "7 Caminos Antiguos", 
+                damage: "Combo 7 Golpes", 
+                effect: "Secuencia de efectos de todas las clases", 
+                cost: 70, 
+                target: "1 enemigo + Área", 
+                cooldown: 7, 
+                image: ASSETS.powers.ancestral.special,
+                crit: "Variado"
+            }
+        }
+    }
+};
+
+// 🌟 PassQuirks (Actualizado)
 const PASSQUIRKS = {
-    fenix: {
-        name: 'Fénix',
-        element: 'Fuego',
-        description: 'El poder del ave inmortal que renace de sus cenizas',
-        emoji: '🔥',
-        rarity: 'Legendario',
-        compatibleClasses: ['Celestial', 'Fénix', 'Berserker'],
-        abilities: ['Regeneración de fuego', 'Renacimiento', 'Llamas eternas']
-    },
-    vendaval: {
-        name: 'Vendaval',
-        element: 'Viento',
-        description: 'Control sobre los vientos y tormentas',
-        emoji: '🌪️',
-        rarity: 'Épico',
-        compatibleClasses: ['Demon', 'Sombra'],
-        abilities: ['Velocidad extrema', 'Control del viento', 'Tormenta']
-    },
-    tierra: {
-        name: 'Tierra',
-        element: 'Tierra',
-        description: 'Dominio sobre la tierra y las rocas',
-        emoji: '🌍',
-        rarity: 'Épico',
-        compatibleClasses: ['Berserker', 'Inmortal'],
-        abilities: ['Control masivo de rocas', 'Defensa de tierra', 'Terremoto']
-    },
-    oscuridad: {
-        name: 'Oscuridad',
-        element: 'Sombra',
-        description: 'Manipulación de las sombras y la oscuridad',
-        emoji: '🌑',
-        rarity: 'Épico',
-        compatibleClasses: ['Demon', 'Sombra'],
-        abilities: ['Absorbe luz', 'Invisibilidad', 'Ataques sombríos']
-    },
-    bestia: {
-        name: 'Bestia',
-        element: 'Naturaleza',
-        description: 'Conexión con los instintos animales primitivos',
-        emoji: '🐺',
-        rarity: 'Épico',
-        compatibleClasses: ['Berserker', 'Demon'],
-        abilities: ['Fuerza extrema', 'Instintos animales', 'Resistencia física']
-    },
-    trueno: {
-        name: 'Trueno',
-        element: 'Eléctrico',
-        description: 'Control sobre rayos y electricidad',
-        emoji: '⚡',
-        rarity: 'Épico',
-        compatibleClasses: ['Fénix', 'Sombra'],
-        abilities: ['Control de rayos', 'Velocidad mejorada', 'Descarga eléctrica']
-    },
-    dragon: {
-        name: 'Dragón',
-        element: 'Mítico',
-        description: 'El poder ancestral de los dragones',
-        emoji: '🐉',
-        rarity: 'Legendario',
-        compatibleClasses: ['Fénix', 'Inmortal'],
-        abilities: ['Fuerza dracónica', 'Defensa dracónica', 'Aliento de dragón']
-    },
-    agua: {
-        name: 'Agua',
-        element: 'Agua',
-        description: 'Fluidez y adaptabilidad del agua',
-        emoji: '💧',
-        rarity: 'Épico',
-        compatibleClasses: ['Celestial', 'Inmortal'],
-        abilities: ['Control de agua', 'Curación de aliados', 'Adaptabilidad']
-    },
-    vacio: {
-        name: 'Vacío',
-        element: 'Cósmico',
-        description: 'Manipulación del espacio y la nada',
-        emoji: '🌌',
-        rarity: 'Legendario',
-        compatibleClasses: ['Celestial', 'Demon'],
-        abilities: ['Control gravitacional', 'Manipulación del espacio', 'Teletransporte']
-    },
-    caos: {
-        name: 'Caos',
-        element: 'Universal',
-        description: 'Poder impredecible que trasciende las reglas',
-        emoji: '🌀',
-        rarity: 'Mítico',
-        compatibleClasses: ['Todas las clases'],
-        abilities: ['Poder inestable', 'Efectos aleatorios', 'Destrucción masiva']
-    },
-    luz: {
-        name: 'Luz',
-        element: 'Universal',
-        description: 'Energía pura de la creación y la esperanza',
-        emoji: '✨',
-        rarity: 'Mítico',
-        compatibleClasses: ['Todas las clases'],
-        abilities: ['Energía pura', 'Creación', 'Esperanza infinita']
-    }
+    fenix: { id: 1, name: "Fénix", description: "Potencia habilidades de regeneración y fuego.", compatibleClasses: ["FÉNIX", "CELESTIAL"], emoji: "🔥" },
+    vendaval: { id: 2, name: "Vendaval", description: "Otorga velocidad extrema y control del viento.", compatibleClasses: ["SHINOBI", "DEMON"], emoji: "💨" }, // Demon placeholder class
+    tierra: { id: 3, name: "Tierra", description: "Control masivo de rocas y tierra.", compatibleClasses: ["BERSERKER", "INMORTAL"], emoji: "🪨" }, // Berserker/Inmortal placeholders
+    oscuridad: { id: 4, name: "Oscuridad", description: "Absorbe luz y permite invisibilidad temporal.", compatibleClasses: ["DEMON", "SHINOBI"], emoji: "🌑" },
+    bestia: { id: 5, name: "Bestia", description: "Fuerza y resistencia física extremas.", compatibleClasses: ["BERSERKER", "DEMON"], emoji: "🐺" },
+    trueno: { id: 6, name: "Trueno", description: "Control de rayos y velocidad mejorada.", compatibleClasses: ["SHINOBI", "FÉNIX"], emoji: "⚡" },
+    dragon: { id: 7, name: "Dragón", description: "Fuerza y defensa dracónica.", compatibleClasses: ["INMORTAL", "FÉNIX"], emoji: "🐲" },
+    agua: { id: 8, name: "Agua", description: "Control de agua y curación de aliados.", compatibleClasses: ["CELESTIAL", "INMORTAL"], emoji: "💧" },
+    vacio: { id: 9, name: "Vacío", description: "Control gravitacional y manipulación del espacio.", compatibleClasses: ["DEMON", "CELESTIAL"], emoji: "🌌" },
+    caos: { id: 10, name: "Caos", description: "Poder inestable capaz de causar destrucción masiva.", compatibleClasses: ["UNIVERSAL"], emoji: "🌀" },
+    luz: { id: 11, name: "Luz", description: "Energía brillante y sagrada que potencia todas las habilidades.", compatibleClasses: ["UNIVERSAL"], emoji: "✨" }
 };
 
-/**
- * Quirks adicionales por categoría
- */
-const QUIRKS = {
-    // Quirks de Combate
-    critical_strike: {
-        name: 'Golpe Crítico',
-        type: 'combat',
-        description: 'Posibilidad de hacer daño crítico devastador',
-        emoji: '💥',
-        rarity: 'Común',
-        effect: 'critical_chance'
-    },
-    elemental_mastery: {
-        name: 'Maestría Elemental',
-        type: 'combat',
-        description: 'Dominio sobre elementos específicos',
-        emoji: '🔥',
-        rarity: 'Raro',
-        effect: 'elemental_boost'
-    },
-    berserker_mode: {
-        name: 'Modo Berserker',
-        type: 'combat',
-        description: 'Furia descontrolada que aumenta el poder',
-        emoji: '😡',
-        rarity: 'Épico',
-        effect: 'rage_boost'
-    },
-    
-    // Quirks de Economía
-    golden_touch: {
-        name: 'Toque Dorado',
-        type: 'economy',
-        description: 'Aumenta las ganancias de monedas',
-        emoji: '💰',
-        rarity: 'Raro',
-        effect: 'coin_boost'
-    },
-    merchants_eye: {
-        name: 'Ojo de Comerciante',
-        type: 'economy',
-        description: 'Detecta mejores ofertas y precios',
-        emoji: '👁️',
-        rarity: 'Común',
-        effect: 'shop_discount'
-    },
-    resource_finder: {
-        name: 'Buscador de Recursos',
-        type: 'economy',
-        description: 'Encuentra recursos raros más fácilmente',
-        emoji: '⛏️',
-        rarity: 'Épico',
-        effect: 'resource_boost'
-    },
-    
-    // Quirks de Progresión
-    fast_learner: {
-        name: 'Aprendiz Rápido',
-        type: 'progression',
-        description: 'Gana experiencia adicional',
-        emoji: '📚',
-        rarity: 'Común',
-        effect: 'exp_boost'
-    },
-    skill_hoarder: {
-        name: 'Acumulador de Habilidades',
-        type: 'progression',
-        description: 'Aprende habilidades más rápido',
-        emoji: '🎯',
-        rarity: 'Raro',
-        effect: 'skill_boost'
-    },
-    experience_boost: {
-        name: 'Impulso de Experiencia',
-        type: 'progression',
-        description: 'Multiplica la experiencia ganada',
-        emoji: '⭐',
-        rarity: 'Épico',
-        effect: 'exp_multiplier'
-    }
-};
+const RARITIES = require('./rarities');
 
-/**
- * Zonas del mundo PassQuirk
- */
-const WORLD_ZONES = {
-    akai_kingdom: {
-        name: 'Reino de Akai',
-        description: 'La capital del mundo PassQuirk',
-        emoji: '🏰',
-        level_range: [1, 10],
-        enemies: ['Slime', 'Goblin', 'Lobo'],
-        resources: ['Hierro', 'Madera', 'Piedra']
-    },
-    mystic_forest: {
-        name: 'Bosque Místico',
-        description: 'Un bosque lleno de magia y misterio',
-        emoji: '🌲',
-        level_range: [8, 20],
-        enemies: ['Ent', 'Hada Oscura', 'Araña Gigante'],
-        resources: ['Hierbas Mágicas', 'Cristales', 'Madera Élfica']
-    },
-    desert_ruins: {
-        name: 'Ruinas del Desierto',
-        description: 'Antiguas ruinas llenas de tesoros',
-        emoji: '🏜️',
-        level_range: [15, 30],
-        enemies: ['Momia', 'Escorpión Gigante', 'Guardián de Arena'],
-        resources: ['Oro', 'Gemas', 'Pergaminos Antiguos']
-    },
-    ice_mountains: {
-        name: 'Montañas Heladas',
-        description: 'Picos nevados con criaturas peligrosas',
-        emoji: '🏔️',
-        level_range: [25, 40],
-        enemies: ['Yeti', 'Dragón de Hielo', 'Lobo Ártico'],
-        resources: ['Hielo Eterno', 'Mithril', 'Pieles Árticas']
-    }
-};
+// ... (other constants)
 
-/**
- * Actividades de la vida real que otorgan experiencia
- */
-const REAL_LIFE_ACTIVITIES = {
-    study: {
-        name: 'Estudiar',
-        emoji: '📚',
-        base_exp: 50,
-        base_coins: 25,
-        cooldown: 3600000, // 1 hora
-        description: 'Estudia para ganar experiencia y conocimiento'
-    },
-    exercise: {
-        name: 'Ejercitarse',
-        emoji: '💪',
-        base_exp: 40,
-        base_coins: 20,
-        cooldown: 7200000, // 2 horas
-        description: 'Mantente en forma y gana resistencia'
-    },
-    work: {
-        name: 'Trabajar',
-        emoji: '💼',
-        base_exp: 60,
-        base_coins: 50,
-        cooldown: 14400000, // 4 horas
-        description: 'Trabaja para ganar monedas y experiencia'
-    },
-    read: {
-        name: 'Leer',
-        emoji: '📖',
-        base_exp: 30,
-        base_coins: 15,
-        cooldown: 1800000, // 30 minutos
-        description: 'Lee para expandir tu mente'
-    },
-    meditate: {
-        name: 'Meditar',
-        emoji: '🧘',
-        base_exp: 25,
-        base_coins: 10,
-        cooldown: 3600000, // 1 hora
-        description: 'Medita para encontrar paz interior'
-    }
-};
+// 🌟 Sistema de Rarezas
+// Mapeo para compatibilidad con estructura antigua (Claves Capitalizadas)
+const RARITY_SYSTEM = {};
+Object.values(RARITIES).forEach(r => {
+    RARITY_SYSTEM[r.name] = {
+        color: r.color,
+        dropRate: r.dropRate,
+        power: r.multiplier,
+        emoji: r.emoji,
+        id: r.id
+    };
+});
 
-/**
- * Sistema de niveles y experiencia
- */
-const LEVEL_SYSTEM = {
-    getRequiredExp: (level) => {
-        return level * 100 + (level - 1) * 50;
+// 👺 Enemigos por Zona (Actualizado según mapa-documentacion.md)
+const ENEMIES_BY_ZONE = {
+    bosque_inicial: {
+        name: "Mayoi - Bosque Inicial",
+        emoji: "🌲",
+        level_range: "1-10",
+        enemies: {
+            slime_bosque: { name: "Slime del Bosque", level: "1-5", rarity: "Mundano", emoji: "💧" },
+            lobo_sombrio: { name: "Lobo Sombrío", level: "5-10", rarity: "Refinado", emoji: "🐺" }
+        }
     },
-    getExpReward: (activity, level) => {
-        const baseExp = REAL_LIFE_ACTIVITIES[activity]?.base_exp || 0;
-        return Math.floor(baseExp * (1 + level * 0.1));
+    reino_mirai: {
+        name: "Reino Mirai (Humanos)",
+        emoji: "👤",
+        level_range: "100+",
+        enemies: {
+            ladron_callejero: { name: "Ladrón Callejero", level: "1-99", rarity: "Mundano", emoji: "🗡️" },
+            rata_mutante: { name: "Rata Mutante", level: "1-99", rarity: "Mundano", emoji: "🐀" },
+            automata_defectuoso: { name: "Autómata Defectuoso", level: "1-99", rarity: "Refinado", emoji: "🤖" }
+        }
     },
-    getCoinReward: (activity, level) => {
-        const baseCoins = REAL_LIFE_ACTIVITIES[activity]?.base_coins || 0;
-        return Math.floor(baseCoins * (1 + level * 0.05));
-    }
-};
-
-/**
- * Configuración del juego
- */
-const GAME_CONFIG = {
-    MAX_LEVEL: 100,
-    STARTING_COINS: 1000,
-    STARTING_GEMS: 10,
-    DAILY_REWARD_COINS: 100,
-    DAILY_REWARD_GEMS: 5,
-    COMBAT_COOLDOWN: 300000, // 5 minutos
-    EXPLORATION_COOLDOWN: 600000 // 10 minutos
-};
-
-/**
- * Sistema de rareza de quirks
- */
-const QUIRK_RARITY = {
-    common: {
-        name: 'Común',
-        color: '#95a5a6',
-        chance: 60,
-        emoji: '⚪',
-        description: 'Quirks básicos disponibles para todos'
+    reino_kyojin: {
+        name: "Reino Kyojin (Ogros)",
+        emoji: "🧌",
+        level_range: "100+",
+        enemies: {
+            elemental_fuego_menor: { name: "Elemental de Fuego Menor", level: "1-99", rarity: "Mundano", emoji: "🔥" },
+            bestia_magma: { name: "Bestia de Magma", level: "1-99", rarity: "Refinado", emoji: "🌋" }
+        }
     },
-    rare: {
-        name: 'Raro',
-        color: '#3498db',
-        chance: 25,
-        emoji: '🔵',
-        description: 'Quirks poco comunes con efectos mejorados'
+    reino_kogane: {
+        name: "Reino Kogane (Enanos)",
+        emoji: "🪓",
+        level_range: "100+",
+        enemies: {
+            golem_piedra: { name: "Golem de Piedra", level: "1-99", rarity: "Mundano", emoji: "🪨" },
+            insecto_gigante: { name: "Insecto Gigante", level: "1-99", rarity: "Refinado", emoji: "🐛" }
+        }
     },
-    epic: {
-        name: 'Épico',
-        color: '#9b59b6',
-        chance: 10,
-        emoji: '🟣',
-        description: 'Quirks poderosos con habilidades especiales'
+    reino_seirei: {
+        name: "Reino Seirei (Elfos)",
+        emoji: "🧝",
+        level_range: "100+",
+        enemies: {
+            espiritu_bosque: { name: "Espíritu del Bosque", level: "1-99", rarity: "Mundano", emoji: "🍃" },
+            guardian_ancestral: { name: "Guardián Ancestral", level: "1-99", rarity: "Refinado", emoji: "🛡️" }
+        }
     },
-    legendary: {
-        name: 'Legendario',
-        color: '#f39c12',
-        chance: 4,
-        emoji: '🟠',
-        description: 'Quirks extremadamente raros y poderosos'
+    ryuuba: {
+        name: "Ryuuba - Costa de los Dragones",
+        emoji: "🏖️",
+        level_range: "10-25",
+        enemies: {
+            cangrejo_arena: { name: "Cangrejo de Arena", level: "10-15", rarity: "Mundano", emoji: "🦀" },
+            tiburon_costero: { name: "Tiburón Costero", level: "15-20", rarity: "Refinado", emoji: "🦈" },
+            sirena_coral: { name: "Sirena de Coral", level: "20-25", rarity: "Sublime", emoji: "🧜‍♀️" }
+        }
     },
-    mythic: {
-        name: 'Mítico',
-        color: '#e74c3c',
-        chance: 1,
-        emoji: '🔴',
-        description: 'Los quirks más raros y poderosos del universo'
+    llanuras: {
+        name: "Llanuras Centrales",
+        emoji: "🌾",
+        level_range: "25-40",
+        enemies: {
+            lobo_pradera: { name: "Lobo de Pradera", level: "25-30", rarity: "Mundano", emoji: "🐕" },
+            bisonte_salvaje: { name: "Bisonte Salvaje", level: "30-40", rarity: "Sublime", emoji: "🦬" }
+        }
+    },
+    murim: {
+        name: "Murim - Refugio de Proscritos",
+        emoji: "🏴‍☠️",
+        level_range: "40-60",
+        enemies: {
+            bandido_renegado: { name: "Bandido Renegado", level: "40-50", rarity: "Supremo", emoji: "🥷" },
+            asesino_elite: { name: "Asesino de Élite", level: "50-60", rarity: "Trascendente", emoji: "🗡️" }
+        }
+    },
+    machia: {
+        name: "Machia - Laboratorio",
+        emoji: "🧪",
+        level_range: "60-80",
+        enemies: {
+            kimera_alpha: { name: "Kimera Alpha", level: "60-70", rarity: "Supremo", emoji: "🧬" },
+            kimera_experimental: { name: "Kimera Experimental", level: "70-80", rarity: "Celestial", emoji: "🧪" }
+        }
+    },
+    dungeon_x: {
+        name: "Dungeon X",
+        emoji: "🏛️",
+        level_range: "80+",
+        enemies: {
+            guardian_piso: { name: "Guardián de Piso", level: "80-99", rarity: "Supremo", emoji: "🗿" },
+            sombra_eterna: { name: "Sombra Eterna", level: "90+", rarity: "Dragón", emoji: "👻" }
+        }
+    },
+    hellfire: {
+        name: "Hellfire",
+        emoji: "🔥",
+        level_range: "90-100+",
+        enemies: {
+            demonio_infernal: { name: "Demonio Infernal", level: "90-95", rarity: "Dragón", emoji: "👿" },
+            avatar_caos: { name: "Avatar del Caos", level: "95-100", rarity: "Caos", emoji: "🌀" },
+            devorador_mundos: { name: "Devorador de Mundos", level: "100+", rarity: "Cósmico", emoji: "🪐" }
+        }
     }
 };
 
 module.exports = {
-    CLASSES,
     PASSQUIRKS,
-    QUIRKS,
-    QUIRK_RARITY,
-    WORLD_ZONES,
-    REAL_LIFE_ACTIVITIES,
-    LEVEL_SYSTEM,
-    GAME_CONFIG
+    BASE_CLASSES,
+    RACES,
+    ENEMIES_BY_ZONE,
+    RARITY_SYSTEM,
+    ASSETS
 };

@@ -20,27 +20,15 @@ module.exports = {
                 console.log(`Ejecutando comando: ${interaction.commandName} por ${interaction.user.tag}`);
                 await command.execute(interaction, client);
 
-                // Registrar el comando en la base de datos
+                // Registrar el comando en la base de datos (LEGACY - REMOVED)
+                /*
                 try {
                     const User = require('../models/User');
-                    let user = await User.findOne({ where: { userId: interaction.user.id } });
-
-                    if (!user) {
-                        user = await User.create({
-                            userId: interaction.user.id,
-                            username: interaction.user.username,
-                            stats: { commands: 1 }
-                        });
-                    } else {
-                        const currentStats = user.stats || {};
-                        currentStats.commands = (currentStats.commands || 0) + 1;
-                        user.stats = currentStats;
-                        user.username = interaction.user.username;
-                        await user.save();
-                    }
+                    // ... código eliminado por incompatibilidad con Supabase
                 } catch (dbError) {
                     console.error('Error al actualizar estadísticas del usuario:', dbError);
                 }
+                */
 
             } catch (error) {
                 console.error(`Error al ejecutar el comando ${interaction.commandName}:`, error);
@@ -134,6 +122,19 @@ module.exports = {
                 }
             }
 
+            // Manejar botones de la tienda (ShopSystem)
+            if (buttonId.startsWith('shop_')) {
+                try {
+                    const ShopSystem = require('../../src/systems/shop-system');
+                    await ShopSystem.handleInteraction(interaction);
+                    return;
+                } catch (error) {
+                    console.error('Error en botones de tienda:', error);
+                    await interaction.reply({ content: '❌ Error en la tienda.', ephemeral: true });
+                    return;
+                }
+            }
+
             // Manejar botones de los nuevos comandos
             const commandHandlers = {
                 'profile_': 'perfil',
@@ -146,7 +147,19 @@ module.exports = {
                 'stats_': 'estadisticas',
                 'help_': 'ayuda',
                 'hub_': 'spacecentral',
-                'music_': 'music'
+                'music_': 'music',
+                'admin_': 'admin',
+                // Tutorial handlers
+                'raza_': 'passquirkrpg',
+                'genero_': 'passquirkrpg',
+                'aspecto_': 'passquirkrpg',
+                'clase_': 'passquirkrpg',
+                'reino_': 'passquirkrpg',
+                'tutorial_': 'passquirkrpg',
+                'confirmar_raza_': 'passquirkrpg',
+                'confirmar_clase_': 'passquirkrpg',
+                'volver_seleccion_': 'passquirkrpg',
+                'continuar_a_reino': 'passquirkrpg'
             };
 
             // Buscar el comando correspondiente
@@ -164,10 +177,16 @@ module.exports = {
                     return;
                 } catch (error) {
                     console.error(`Error en botón de ${handlerCommand.data.name}:`, error);
-                    await interaction.reply({
-                        content: `${require('../utils/emojiManager').getEmoji('red_x')} Error al procesar la acción. Intenta de nuevo.`,
-                        ephemeral: true
-                    });
+                    const errorContent = `${require('../utils/emojiManager').getEmoji('red_x')} Error al procesar la acción. Intenta de nuevo.`;
+                    try {
+                        if (interaction.replied || interaction.deferred) {
+                            await interaction.followUp({ content: errorContent, ephemeral: true });
+                        } else {
+                            await interaction.reply({ content: errorContent, ephemeral: true });
+                        }
+                    } catch (replyError) {
+                        console.error('Error al enviar mensaje de error al usuario:', replyError);
+                    }
                     return;
                 }
             }
@@ -229,17 +248,18 @@ module.exports = {
                 'iniciar_aventura', 'crear_personaje', 'confirmar_personaje',
                 'iniciar_tutorial', 'tutorial_atacar', 'tutorial_defender', 'tutorial_item',
                 'iniciar_tutorial_combate', 'ir_space_central', 'ataque_final',
-                'tutorial_explorar', 'tutorial_ayuda',
+                'tutorial_explorar', 'tutorial_ayuda', 'reiniciar_tutorial_confirm',
                 'tutorial_musica_si', 'tutorial_musica_no', 'tutorial_music_continue', 'tutorial_music_check_joined',
                 'tutorial_step_nombre', 'tutorial_step_aspecto', 'tutorial_confirmar_ficha',
                 'elegir_reino_inicial', 'reiniciar_combate', 'tutorial_open_name_modal',
                 'iniciar_aventura_tutorial', 'iniciar_combate_tutorial', 'combate_atacar',
                 'combate_defender', 'combate_usar_pocion', 'combate_ataque_final',
                 'tutorial_continuar_progreso', 'tutorial_reiniciar_progreso',
-                'tutorial_aspecto_subir', 'tutorial_aspecto_url', 'tutorial_abrir_historia'
+                'tutorial_aspecto_subir', 'tutorial_aspecto_url', 'tutorial_abrir_historia',
+                'genero_masculino', 'genero_femenino', 'continuar_a_reino', 'volver_seleccion_clase'
             ];
 
-            const tutorialPrefixes = ['clase_', 'reino_', 'combate_'];
+            const tutorialPrefixes = ['clase_', 'reino_', 'combate_', 'passquirk_', 'hub_', 'raza_', 'confirmar_raza_', 'confirmar_clase_', 'hotel_', 'armeria_', 'comprar_', 'entrar_', 'ir_', 'explorar_'];
 
             const isTutorialInteraction = tutorialButtons.includes(buttonId) ||
                 tutorialPrefixes.some(prefix => buttonId.startsWith(prefix));
@@ -392,9 +412,31 @@ module.exports = {
                 }
             }
         }
-
+        
         // Manejar menús desplegables
         else if (interaction.isStringSelectMenu()) {
+            // Tienda (ShopSystem)
+            if (interaction.customId.startsWith('shop_')) {
+                try {
+                    const ShopSystem = require('../../src/systems/shop-system');
+                    await ShopSystem.handleInteraction(interaction);
+                    return;
+                } catch (error) {
+                    console.error('Error en menú de tienda:', error);
+                    await interaction.reply({ content: '❌ Error en la tienda.', ephemeral: true });
+                    return;
+                }
+            }
+
+            // Admin Panel
+            if (interaction.customId === 'admin_panel_select') {
+                const adminCmd = client.commands.get('admin');
+                if (adminCmd && adminCmd.handleInteraction) {
+                    await adminCmd.handleInteraction(interaction, client);
+                }
+                return;
+            }
+
             // Creador de personaje oficial: selección de PassQuirk
             if (interaction.customId === 'passquirk_selection') {
                 const characterCreator = require('../../src/commands/slash/functional/general/character-creator');
@@ -445,11 +487,11 @@ module.exports = {
             }
 
             // Manejar menú de selección de PassQuirks y Reino (PRIORIDAD ALTA)
-            if (interaction.customId === 'select_passquirk' || interaction.customId === 'seleccionar_region' || interaction.customId === 'seleccionar_reino') {
+            if (interaction.customId === 'select_passquirk' || interaction.customId === 'seleccionar_region' || interaction.customId === 'seleccionar_reino' || interaction.customId === 'tutorial_reino_select') {
                 try {
                     const passquirkCommand = client.commands.get('passquirkrpg');
                     if (passquirkCommand && passquirkCommand.handleInteraction) {
-                        await passquirkCommand.handleInteraction(interaction);
+                        await passquirkCommand.handleInteraction(interaction, client);
                         return;
                     }
                 } catch (error) {
@@ -463,7 +505,7 @@ module.exports = {
             }
 
             // Manejar menús de selección del RPG
-            const rpgMenus = require('../selectMenus/rpgMenus');
+            // const rpgMenus = require('../selectMenus/rpgMenus');
 
             // Manejar menús de selección de los nuevos comandos
             const menuHandlers = {

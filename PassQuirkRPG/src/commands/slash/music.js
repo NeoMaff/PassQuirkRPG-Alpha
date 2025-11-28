@@ -123,6 +123,9 @@ module.exports = {
                     await musicManager.joinChannel(targetChannel);
 
                     // Reproducir música
+                    // e:\PassQuirk\PassQuirkRPG\documentation\Doc-Oficial\Música\Economia - PassQuirk.wav (Si estás en tienda)
+                    // e:\PassQuirk\PassQuirkRPG\documentation\Doc-Oficial\Música\Lucha - Battle Cry.mp3 (Si estás en combate)
+                    // Por defecto usamos el tema de aventura
                     const musicPath = 'e:/PassQuirk/PassQuirkRPG/documentation/Doc-Oficial/Música/Aventura - PassQuirk.wav';
                     musicManager.playFile(musicPath, true);
 

@@ -1,7 +1,7 @@
 // Importar path primero
 const path = require('path');
 
-// Cargar variables de entorno
+// Cargar variables de entorno INMEDIATAMENTE
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 // Importar módulos necesarios
@@ -43,10 +43,20 @@ client.gameManager = new PassQuirkGameManager(client);
 
 // Inicializar el sistema de tutorial completo
 // const TutorialCompleto = require('./systems/tutorial-completo');
+const CombatSystem = require('../src/systems/combat-system');
+const ExplorationSystem = require('../src/systems/exploration-system');
+const InventorySystem = require('../src/systems/inventory-system');
+const { ShopSystem } = require('../src/systems/shop-system');
+
+// Instanciar sistemas
 client.gameManager.systems = {
     user: client.userManager,
     dialogue: client.dialogueManager,
     // tutorialCompleto: new TutorialCompleto()
+    combat: new CombatSystem(client.gameManager),
+    exploration: new ExplorationSystem(client.gameManager),
+    inventory: new InventorySystem(client.gameManager),
+    shop: ShopSystem // ShopSystem is static, not instantiated
 };
 
 // Inicializar el sistema de tutoriales

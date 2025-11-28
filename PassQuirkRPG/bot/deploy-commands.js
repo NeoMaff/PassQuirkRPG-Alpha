@@ -1,7 +1,7 @@
 const { REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 /**
  * Script para desplegar comandos de barra (slash commands) en Discord
@@ -13,17 +13,17 @@ const foldersPath = path.join(__dirname, 'commands');
 // Función para cargar comandos recursivamente
 function loadCommands(dir) {
     const files = fs.readdirSync(dir);
-    
+
     for (const file of files) {
         const filePath = path.join(dir, file);
         const stat = fs.statSync(filePath);
-        
+
         if (stat.isDirectory()) {
             loadCommands(filePath);
         } else if (file.endsWith('.js')) {
             try {
                 const command = require(filePath);
-                
+
                 if (command.data && command.data.name) {
                     commands.push(command.data.toJSON());
                     console.log(`✅ Comando cargado: ${command.data.name}`);
@@ -41,8 +41,8 @@ function loadCommands(dir) {
 if (fs.existsSync(foldersPath)) {
     loadCommands(foldersPath);
 } else {
-    console.error('❌ La carpeta de comandos no existe:', foldersPath);
-    process.exit(1);
+    console.warn('⚠️ La carpeta de comandos no existe:', foldersPath);
+    // No salimos del proceso, intentamos cargar otras rutas
 }
 
 // Cargar comandos desde src/commands si existe (compatibilidad)
@@ -79,41 +79,41 @@ const rest = new REST().setToken(process.env.DISCORD_TOKEN);
 async function deployCommands() {
     try {
         console.log('🚀 Iniciando despliegue de comandos...');
-        
+
         let data;
-        
+
         if (process.env.GUILD_ID && process.env.NODE_ENV === 'development') {
             // Despliegue en servidor específico (desarrollo)
             console.log(`🔧 Desplegando ${commands.length} comandos en el servidor de desarrollo...`);
-            
+
             data = await rest.put(
                 Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),
                 { body: commands },
             );
-            
+
             console.log(`✅ ${data.length} comandos desplegados exitosamente en el servidor de desarrollo.`);
         } else {
             // Despliegue global (producción)
             console.log(`🌍 Desplegando ${commands.length} comandos globalmente...`);
             console.log('⚠️ Los comandos globales pueden tardar hasta 1 hora en aparecer.');
-            
+
             data = await rest.put(
                 Routes.applicationCommands(process.env.CLIENT_ID),
                 { body: commands },
             );
-            
+
             console.log(`✅ ${data.length} comandos desplegados exitosamente globalmente.`);
         }
-        
+
         // Mostrar lista de comandos desplegados
         console.log('\n📋 Comandos desplegados:');
         data.forEach(command => {
             console.log(`   • /${command.name} - ${command.description}`);
         });
-        
+
     } catch (error) {
         console.error('❌ Error al desplegar comandos:', error);
-        
+
         // Manejo específico de errores comunes
         if (error.code === 50001) {
             console.error('💡 El bot no tiene acceso al servidor especificado.');
@@ -124,7 +124,7 @@ async function deployCommands() {
         } else if (error.status === 401) {
             console.error('💡 El token del bot es inválido.');
         }
-        
+
         process.exit(1);
     }
 }
@@ -133,7 +133,7 @@ async function deployCommands() {
 async function clearCommands() {
     try {
         console.log('🧹 Limpiando comandos existentes...');
-        
+
         if (process.env.GUILD_ID && process.env.NODE_ENV === 'development') {
             await rest.put(
                 Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID),

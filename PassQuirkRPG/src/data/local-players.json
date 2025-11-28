@@ -1,0 +1,235 @@
+{
+  "1012429271693807696": {
+    "userId": "1012429271693807696",
+    "username": "ciomaff",
+    "level": 1,
+    "experience": 0,
+    "nextLevelExp": 100,
+    "class": "alma naciente",
+    "race": "humanos",
+    "kingdom": "reino_mirai",
+    "gender": "Masculino",
+    "stats": {
+      "hp": 116,
+      "maxHp": 116,
+      "mp": 105,
+      "maxMp": 105,
+      "attack": 12,
+      "defense": 6,
+      "speed": 11
+    },
+    "realPower": 0,
+    "activities": {
+      "total": 0,
+      "today": 0,
+      "streak": 0,
+      "lastActivity": null,
+      "history": []
+    },
+    "inventory": {
+      "gold": 7732,
+      "items": {
+        "itm_1764353123130_951": {
+          "id": "itm_1764353123130_951",
+          "name": "Gema Común",
+          "type": "consumible",
+          "rarity": "Común",
+          "value": 10
+        },
+        "itm_1764353127145_849": {
+          "id": "itm_1764353127145_849",
+          "name": "Poción de Energía",
+          "type": "consumible",
+          "rarity": "Común",
+          "value": 10
+        },
+        "itm_1764353129159_732": {
+          "id": "itm_1764353129159_732",
+          "name": "Material",
+          "type": "consumible",
+          "rarity": "Común",
+          "value": 10
+        },
+        "itm_1764353135173_284": {
+          "id": "itm_1764353135173_284",
+          "name": "Poción de Vida",
+          "type": "cofre_item",
+          "rarity": "Legendario",
+          "value": 25
+        },
+        "itm_1764353135173_741": {
+          "id": "itm_1764353135173_741",
+          "name": "Gema Encantada",
+          "type": "cofre_item",
+          "rarity": "Épico",
+          "value": 25
+        },
+        "itm_1764353141199_463": {
+          "id": "itm_1764353141199_463",
+          "name": "Gema Común",
+          "type": "consumible",
+          "rarity": "Común",
+          "value": 10
+        },
+        "itm_1764353143200_701": {
+          "id": "itm_1764353143200_701",
+          "name": "Poción de Vida",
+          "type": "consumible",
+          "rarity": "Común",
+          "value": 10
+        },
+        "itm_1764353147207_634": {
+          "id": "itm_1764353147207_634",
+          "name": "Daga Ligera",
+          "type": "arma",
+          "rarity": "Común",
+          "stats": {
+            "attack": 7
+          }
+        },
+        "itm_1764353157247_10": {
+          "id": "itm_1764353157247_10",
+          "name": "Daga Ligera",
+          "type": "arma",
+          "rarity": "Común",
+          "stats": {
+            "attack": 11
+          }
+        },
+        "itm_1764353161270_228": {
+          "id": "itm_1764353161270_228",
+          "name": "Arco Simple",
+          "type": "arma",
+          "rarity": "Común",
+          "stats": {
+            "attack": 7
+          }
+        },
+        "itm_1764353163281_599": {
+          "id": "itm_1764353163281_599",
+          "name": "Poción de Vida",
+          "type": "consumible",
+          "rarity": "Común",
+          "value": 10
+        },
+        "itm_1764353165293_714": {
+          "id": "itm_1764353165293_714",
+          "name": "Poción de Energía",
+          "type": "cofre_item",
+          "rarity": "Raro",
+          "value": 25
+        },
+        "itm_1764353171317_774": {
+          "id": "itm_1764353171317_774",
+          "name": "Arco Simple",
+          "type": "arma",
+          "rarity": "Común",
+          "stats": {
+            "attack": 9
+          }
+        },
+        "itm_1764353177338_486": {
+          "id": "itm_1764353177338_486",
+          "name": "Gema Común",
+          "type": "consumible",
+          "rarity": "Común",
+          "value": 10
+        },
+        "itm_1764353181354_348": {
+          "id": "itm_1764353181354_348",
+          "name": "Gema Encantada",
+          "type": "cofre_item",
+          "rarity": "Común",
+          "value": 25
+        },
+        "itm_1764353183358_491": {
+          "id": "itm_1764353183358_491",
+          "name": "Poción de Energía",
+          "type": "cofre_item",
+          "rarity": "Épico",
+          "value": 25
+        },
+        "itm_1764353183358_227": {
+          "id": "itm_1764353183358_227",
+          "name": "Gema Encantada",
+          "type": "cofre_item",
+          "rarity": "Épico",
+          "value": 25
+        },
+        "itm_1764353185371_817": {
+          "id": "itm_1764353185371_817",
+          "name": "Arco Simple",
+          "type": "arma",
+          "rarity": "Común",
+          "stats": {
+            "attack": 8
+          }
+        },
+        "itm_1764353191382_817": {
+          "id": "itm_1764353191382_817",
+          "name": "Material",
+          "type": "consumible",
+          "rarity": "Común",
+          "value": 10
+        },
+        "mineral_de_hierro": {
+          "name": "Mineral de Hierro",
+          "quantity": 50,
+          "type": "material"
+        },
+        "roca_de_granito": {
+          "name": "Roca de Granito",
+          "quantity": 49,
+          "type": "material"
+        },
+        "piedra_común": {
+          "name": "Piedra Común",
+          "quantity": 42,
+          "type": "material"
+        },
+        "pez_común": {
+          "name": "Pez Común",
+          "quantity": 35,
+          "type": "comida"
+        },
+        "carpa_gris": {
+          "name": "Carpa Gris",
+          "quantity": 38,
+          "type": "comida"
+        },
+        "trucha_plateada": {
+          "name": "Trucha Plateada",
+          "quantity": 36,
+          "type": "comida"
+        }
+      },
+      "equipment": {
+        "weapon": null,
+        "armor": null,
+        "accessory": null
+      }
+    },
+    "exploration": {
+      "currentZone": "Space Central",
+      "unlockedZones": [
+        "reino_mirai",
+        "Space Central"
+      ],
+      "progress": {},
+      "visitedSpaceCentral": true,
+      "lastZone": "Mayoi"
+    },
+    "quirks": [],
+    "passquirk": null,
+    "titles": [
+      "Novato"
+    ],
+    "createdAt": "2025-11-28T17:38:31.469Z",
+    "mission": {
+      "id": "mision_tutorial_bosque",
+      "status": "active",
+      "step": "intro",
+      "description": "Escucha a ElSabio en Space Central y prepárate para tu primera misión."
+    }
+  }
+}

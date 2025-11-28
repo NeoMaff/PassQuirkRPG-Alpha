@@ -1,29 +1,29 @@
 // 🗄️ CONFIGURACIÓN DE BASE DE DATOS - Instancia centralizada
-const sequelize = require('../../src/database/connection');
+// const sequelize = require('../../src/database/connection'); // DESACTIVADO - Bot usa Supabase ahora
 
 // Función para conectar y sincronizar la base de datos
 const connectDatabase = async () => {
     try {
         await sequelize.authenticate();
         console.log('✅ Conectado a la base de datos SQLite local');
-        
+
         // Importar modelos
         const User = require('../models/User');
         const Character = require('../models/Character');
         const Enemy = require('../models/Enemy');
         const Item = require('../models/Item');
         const Inventory = require('../models/Inventory');
-        
+
         // Configurar relaciones
         setupAssociations(User, Character, Enemy);
-        
+
         // Sincronizar modelos (crear tablas si no existen)
         await sequelize.sync({ alter: true });
         console.log('✅ Base de datos sincronizada');
-        
+
         // Poblar datos iniciales si es necesario
         await seedInitialData();
-        
+
         return true;
     } catch (error) {
         console.error('❌ Error al conectar con la base de datos:', error);
@@ -39,13 +39,13 @@ function setupAssociations(User, Character, Enemy) {
         sourceKey: 'userId',
         as: 'character'
     });
-    
+
     Character.belongsTo(User, {
         foreignKey: 'userId',
         targetKey: 'userId',
         as: 'user'
     });
-    
+
     // Inventario: Character 1-N Inventory
     const Item = require('../models/Item');
     const Inventory = require('../models/Inventory');
@@ -79,7 +79,7 @@ async function seedInitialData() {
     try {
         const Enemy = require('../models/Enemy');
         const Item = require('../models/Item');
-        
+
         // Verificar si ya existen enemigos
         const existingEnemies = await Enemy.count();
         if (existingEnemies === 0) {
@@ -119,7 +119,7 @@ async function seedInitialData() {
             ]);
             console.log('✅ Items iniciales creados');
         }
-        
+
     } catch (error) {
         console.error('❌ Error al poblar datos iniciales:', error);
     }
@@ -135,6 +135,5 @@ const closeDatabase = async () => {
     }
 };
 
-module.exports = sequelize;
 module.exports.connectDatabase = connectDatabase;
 module.exports.closeDatabase = closeDatabase;

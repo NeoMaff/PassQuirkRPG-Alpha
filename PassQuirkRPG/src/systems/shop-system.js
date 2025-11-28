@@ -1,6 +1,7 @@
 // 🛒 SISTEMA DE TIENDA - Gestión de compras y ventas
-const { OfficialEmbedBuilder, OFFICIAL_COLORS, OFFICIAL_EMOJIS } = require('../utils/embedStyles');
-const User = require('../models/User');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
+const { COLORS, EMOJIS, OfficialEmbedBuilder } = require('../utils/embedStyles');
+const RARITIES = require('../data/rarities');
 
 /**
  * Catálogo de items disponibles en la tienda
@@ -9,21 +10,60 @@ const SHOP_CATALOG = {
     weapons: {
         name: '⚔️ Armas',
         items: {
-            'sword_basic': {
-                name: 'Espada Básica',
-                description: 'Una espada simple pero efectiva',
+            'mundane_sword': {
+                name: 'Espada Mundana',
+                description: 'Una espada básica para novatos.',
+                price: 50,
+                currency: 'coins',
+                stats: { attack: 5 },
+                emoji: '🗡️',
+                rarity: 'mundano',
+                levelReq: 1
+            },
+            'refined_sword': {
+                name: 'Espada Refinada',
+                description: 'Forjada con acero de mejor calidad.',
                 price: 500,
                 currency: 'coins',
-                stats: { attack: 10 },
-                emoji: '⚔️'
+                stats: { attack: 12 },
+                emoji: '⚔️',
+                rarity: 'refinado',
+                levelReq: 5
             },
-            'bow_basic': {
-                name: 'Arco Básico',
-                description: 'Perfecto para ataques a distancia',
+            'refined_bow': {
+                name: 'Arco Refinado',
+                description: 'Tensado para mayor precisión.',
                 price: 450,
                 currency: 'coins',
-                stats: { attack: 8, speed: 2 },
-                emoji: '🏹'
+                stats: { attack: 10, speed: 2 },
+                emoji: '🏹',
+                rarity: 'refinado',
+                levelReq: 5
+            }
+        }
+    },
+    tools: {
+        name: '⚒️ Herramientas',
+        items: {
+            'mundane_pickaxe': {
+                name: 'Pico Mundano',
+                description: 'Herramienta básica para minería superficial.',
+                price: 100,
+                currency: 'coins',
+                type: 'tool',
+                emoji: '⛏️',
+                rarity: 'mundano',
+                levelReq: 10
+            },
+            'mundane_rod': {
+                name: 'Caña Mundana',
+                description: 'Caña simple para pescar en aguas tranquilas.',
+                price: 100,
+                currency: 'coins',
+                type: 'tool',
+                emoji: '🎣',
+                rarity: 'mundano',
+                levelReq: 10
             }
         }
     },
@@ -68,27 +108,6 @@ const SHOP_CATALOG = {
                 emoji: '💙'
             }
         }
-    },
-    premium: {
-        name: '💎 Premium',
-        items: {
-            'exp_boost': {
-                name: 'Impulso de EXP',
-                description: 'Duplica la experiencia ganada por 1 hora',
-                price: 50,
-                currency: 'gems',
-                effect: 'exp_boost_1h',
-                emoji: '⭐'
-            },
-            'lucky_charm': {
-                name: 'Amuleto de Suerte',
-                description: 'Aumenta la probabilidad de drops raros',
-                price: 75,
-                currency: 'gems',
-                effect: 'luck_boost',
-                emoji: '🍀'
-            }
-        }
     }
 };
 
@@ -103,11 +122,11 @@ class ShopSystem {
             .setOfficialDescription(
                 '**¡Bienvenido a la tienda oficial de PassQuirk!** 🛒\n\n' +
                 'Aquí encontrarás todo lo necesario para tu aventura. ' +
-                'Selecciona una categoría para ver los items disponibles.\n\n' +
+                'Selecciona una categoría abajo para ver los items disponibles.\n\n' +
                 '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
             );
 
-        // Agregar categorías
+        // Agregar campos visuales de categorías
         Object.entries(SHOP_CATALOG).forEach(([key, category]) => {
             const itemCount = Object.keys(category.items).length;
             embedBuilder.addOfficialField(
@@ -118,7 +137,25 @@ class ShopSystem {
             );
         });
 
-        return embedBuilder.getEmbed();
+        // Crear Menú de Selección de Categoría
+        const selectMenu = new StringSelectMenuBuilder()
+            .setCustomId('shop_select_category')
+            .setPlaceholder('Selecciona una categoría de la tienda')
+            .addOptions(
+                Object.entries(SHOP_CATALOG).map(([key, cat]) => ({
+                    label: cat.name.replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ ]/g, '').trim(), // Limpiar emojis del nombre para el label
+                    description: `Ver items de ${cat.name}`,
+                    value: key,
+                    emoji: cat.name.split(' ')[0] // Asumimos que el emoji es el primer caracter/bloque
+                }))
+            );
+
+        const row = new ActionRowBuilder().addComponents(selectMenu);
+
+        return { 
+            embeds: [embedBuilder.getEmbed()], 
+            components: [row] 
+        };
     }
 
     /**
@@ -126,82 +163,169 @@ class ShopSystem {
      */
     static async showCategory(categoryKey) {
         const category = SHOP_CATALOG[categoryKey];
-        if (!category) {
-            throw new Error('Categoría no encontrada');
-        }
+        if (!category) throw new Error('Categoría no encontrada');
 
         const embedBuilder = new OfficialEmbedBuilder()
             .setOfficialStyle('shop')
             .setOfficialTitle(`${category.name} - Tienda PassQuirk`, OFFICIAL_EMOJIS.SHOP)
             .setOfficialDescription(
-                `**Items disponibles en ${category.name}:**\n\n` +
+                `**Items disponibles en ${category.name}:**\n` +
+                'Selecciona un item para comprarlo o usa el menú para cambiar de categoría.\n\n' +
                 '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'
             );
 
-        // Agregar items
+        // Agregar items al embed
         Object.entries(category.items).forEach(([itemKey, item]) => {
             const currency = item.currency === 'coins' ? '🪙' : '💎';
-            const statsText = item.stats ? 
-                Object.entries(item.stats).map(([stat, value]) => `${stat}: +${value}`).join(', ') : 
+            const statsText = item.stats ?
+                Object.entries(item.stats).map(([stat, value]) => `${stat}: +${value}`).join(', ') :
                 item.effect || 'Consumible';
             
+            // Obtener emoji de rareza si existe
+            const rarityEmoji = RARITIES[item.rarity]?.emoji || '';
+
             embedBuilder.addOfficialField(
-                `${item.emoji} ${item.name}`,
+                `${item.emoji} ${item.name} ${rarityEmoji}`,
                 `${item.description}\n**Precio:** ${item.price} ${currency}\n**Efecto:** ${statsText}`,
                 true
             );
         });
 
-        return embedBuilder.getEmbed();
+        // Botones de compra (limitado a 5 por fila, si hay muchos items mejor usar select menu para comprar)
+        // Para simplicidad, usamos un Select Menu para COMPRAR items de esta categoría
+        const buySelectMenu = new StringSelectMenuBuilder()
+            .setCustomId(`shop_buy_select_${categoryKey}`)
+            .setPlaceholder('Selecciona un item para comprar')
+            .addOptions(
+                Object.entries(category.items).map(([key, item]) => ({
+                    label: `${item.name} (${item.price} ${item.currency === 'coins' ? 'PC' : 'Gemas'})`,
+                    description: item.description.substring(0, 50),
+                    value: key,
+                    emoji: item.emoji
+                }))
+            );
+        
+        // Botón para volver
+        const backButton = new ButtonBuilder()
+            .setCustomId('shop_back_main')
+            .setLabel('Volver al Catálogo')
+            .setStyle(ButtonStyle.Secondary)
+            .setEmoji('⬅️');
+
+        const row1 = new ActionRowBuilder().addComponents(buySelectMenu);
+        const row2 = new ActionRowBuilder().addComponents(backButton);
+
+        return { 
+            embeds: [embedBuilder.getEmbed()], 
+            components: [row1, row2] 
+        };
+    }
+
+    /**
+     * Maneja interacciones de la tienda
+     */
+    static async handleInteraction(interaction) {
+        const { customId } = interaction;
+
+        try {
+            if (customId === 'shop_select_category') {
+                const selectedCategory = interaction.values[0];
+                const { embeds, components } = await this.showCategory(selectedCategory);
+                await interaction.update({ embeds, components });
+            } 
+            else if (customId.startsWith('shop_buy_select_')) {
+                const categoryKey = customId.replace('shop_buy_select_', '');
+                const itemKey = interaction.values[0];
+                
+                // Intentar compra
+                const result = await this.purchaseItem(interaction.user.id, categoryKey, itemKey, 1);
+                
+                await interaction.reply({ 
+                    content: `✅ **¡Compra exitosa!**\nHas comprado **${result.quantity}x ${result.itemName}** por **${result.totalPrice} ${result.currency}**.`,
+                    ephemeral: true 
+                });
+            }
+            else if (customId === 'shop_back_main') {
+                const { embeds, components } = await this.showMainCatalog();
+                await interaction.update({ embeds, components });
+            }
+        } catch (error) {
+            console.error('Shop Interaction Error:', error);
+            const replyMethod = interaction.deferred || interaction.replied ? 'followUp' : 'reply';
+            await interaction[replyMethod]({ 
+                content: `❌ Error en la tienda: ${error.message}`, 
+                ephemeral: true 
+            });
+        }
     }
 
     /**
      * Procesa la compra de un item
      */
     static async purchaseItem(userId, categoryKey, itemKey, quantity = 1) {
+        const playerDB = require('../data/player-database');
+        
         const category = SHOP_CATALOG[categoryKey];
-        if (!category) {
-            throw new Error('Categoría no encontrada');
-        }
+        if (!category) throw new Error('Categoría no encontrada');
 
         const item = category.items[itemKey];
-        if (!item) {
-            throw new Error('Item no encontrado');
-        }
+        if (!item) throw new Error('Item no encontrado');
 
-        // Obtener usuario
-        const user = await User.findByPk(userId);
-        if (!user) {
-            throw new Error('Usuario no encontrado');
-        }
+        // 1. Obtener jugador
+        const player = await playerDB.getPlayer(userId);
+        if (!player) throw new Error('Jugador no encontrado');
 
         const totalPrice = item.price * quantity;
-        
-        // Verificar fondos
-        if (item.currency === 'PassCoins') {
-            if (user.balance < totalPrice) {
-                throw new Error(`Fondos insuficientes. Necesitas ${totalPrice} monedas.`);
-            }
-            user.balance -= totalPrice;
-        } else if (item.currency === 'PassGem') {
-            if (user.gems < totalPrice) {
-                throw new Error(`PassGems insuficientes. Necesitas ${totalPrice} PassGems.`);
-            }
-            user.gems -= totalPrice;
+        const currency = item.currency || 'coins';
+        const levelReq = item.levelReq || 1;
+
+        // 1.5 Verificar Nivel
+        if ((player.level || 1) < levelReq) {
+            throw new Error(`Necesitas ser Nivel ${levelReq} para comprar este objeto.`);
         }
 
-        await user.save();
+        // 2. Verificar fondos y realizar cobro
+        if (currency === 'coins') {
+            // Usar wallet_transactions para PassCoins
+            // Verificar saldo actual (DB o memoria)
+            if ((player.gold || 0) < totalPrice) {
+                throw new Error(`Fondos insuficientes. Necesitas ${totalPrice} PassCoins.`);
+            }
 
-        // Aquí se agregaría la lógica para añadir el item al inventario
-        // Por ahora solo simulamos la compra
+            // Registrar transacción (el trigger actualizará el saldo en DB)
+            await playerDB.addWalletTransaction(
+                userId,
+                totalPrice,
+                'spend',
+                'shop',
+                { item_key: itemKey, quantity, category: categoryKey }
+            );
+            
+            // Actualizar memoria para reflejar cambio inmediato
+            player.gold -= totalPrice;
+            
+        } else {
+            throw new Error('Moneda no soportada.');
+        }
+
+        // 3. Añadir item al inventario
+        const added = await playerDB.addItem(userId, itemKey, quantity);
+        
+        if (!added) {
+            // Revertir cobro si falla la entrega (simple compensación)
+            if (currency === 'coins') {
+                 await playerDB.addWalletTransaction(userId, totalPrice, 'earn', 'refund', { reason: 'delivery_failed' });
+                 player.gold += totalPrice;
+            }
+            throw new Error('Error al entregar el item. Se ha reembolsado el dinero.');
+        }
 
         return {
             success: true,
-            item: item,
-            quantity: quantity,
-            totalPrice: totalPrice,
-            currency: item.currency,
-            remainingBalance: item.currency === 'coins' ? user.balance : user.gems
+            itemName: item.name,
+            quantity,
+            totalPrice,
+            currency: 'PassCoins'
         };
     }
 
@@ -211,7 +335,7 @@ class ShopSystem {
     static getItemInfo(categoryKey, itemKey) {
         const category = SHOP_CATALOG[categoryKey];
         if (!category) return null;
-        
+
         return category.items[itemKey] || null;
     }
 
@@ -220,7 +344,7 @@ class ShopSystem {
      */
     static searchItems(query) {
         const results = [];
-        
+
         Object.entries(SHOP_CATALOG).forEach(([categoryKey, category]) => {
             Object.entries(category.items).forEach(([itemKey, item]) => {
                 if (item.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -234,7 +358,7 @@ class ShopSystem {
                 }
             });
         });
-        
+
         return results;
     }
 }

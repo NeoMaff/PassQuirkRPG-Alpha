@@ -1,0 +1,156 @@
+[2025-11-28T14:11:24.240Z] UncaughtException: TypeError: PlayerDatabase is not a constructor
+    at Object.execute (E:\PassQuirk\PassQuirkRPG\bot\events\ready.js:14:33)
+    at Client.<anonymous> (E:\PassQuirk\PassQuirkRPG\bot\index.js:163:52)
+    at Object.onceWrapper (node:events:633:26)
+    at Client.emit (node:events:518:28)
+    at WebSocketManager.triggerClientReady (E:\PassQuirk\PassQuirkRPG\bot\node_modules\discord.js\src\client\websocket\WebSocketManager.js:388:17)
+    at WebSocketManager.checkShardsReady (E:\PassQuirk\PassQuirkRPG\bot\node_modules\discord.js\src\client\websocket\WebSocketManager.js:371:10)
+    at WebSocketShard.<anonymous> (E:\PassQuirk\PassQuirkRPG\bot\node_modules\discord.js\src\client\websocket\WebSocketManager.js:201:16)
+    at WebSocketShard.emit (node:events:518:28)
+    at WebSocketShard.checkReady (E:\PassQuirk\PassQuirkRPG\bot\node_modules\discord.js\src\client\websocket\WebSocketShard.js:181:12)
+    at WebSocketShard.gotGuild (E:\PassQuirk\PassQuirkRPG\bot\node_modules\discord.js\src\client\websocket\WebSocketShard.js:155:10)
+[2025-11-28T18:05:37.179Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:380:66)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:459:20)
+[2025-11-28T18:05:49.221Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:380:66)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:459:20)
+[2025-11-28T18:06:27.372Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:380:66)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:459:20)
+[2025-11-28T18:06:33.389Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:380:66)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:459:20)
+[2025-11-28T18:09:46.005Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:09:48.008Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:09:54.039Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:09:56.044Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:10:02.054Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:10:04.061Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:10:06.066Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:10:08.072Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:10:12.094Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:10:16.116Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:10:18.118Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:10:22.141Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:10:24.149Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:10:26.157Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:10:32.183Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:10:34.196Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:10:36.200Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:10:38.209Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:10:40.216Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:10:42.224Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:10:44.225Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:10:48.237Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:10:52.252Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:10:58.283Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)
+[2025-11-28T18:11:00.283Z] UnhandledRejection: TypeError: Cannot convert undefined or null to object
+    at Function.values (<anonymous>)
+    at PassQuirkGameManager.getRandomEnemy (E:\PassQuirk\PassQuirkRPG\bot\core\passquirk-game-manager.js:263:41)
+    at maybeGenerateTravelEvent (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:301:42)
+    at Timeout._onTimeout (E:\PassQuirk\PassQuirkRPG\src\commands\slash\explorar.js:367:20)

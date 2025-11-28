@@ -1,202 +1,277 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const musicManager = require('../../../bot/utils/musicManager');
+const path = require('path');
+const fs = require('fs');
+const { getEmoji } = require('../../../bot/utils/emojiManager');
+
+// --- CONFIGURACIÓN VISUAL ---
+const COLORES = {
+    AMARILLO_TUTORIAL: 0xfcd34d,
+    ROJO_PELIGRO: 0xdc2626,
+    VERDE_EXITO: 0x10b981,
+    PURPURA_MISTICO: 0x9B59B6
+};
+
+const PATHS = {
+    SABIO_BANNER: 'e:/PassQuirk/PassQuirkRPG/Documentación - Juego/Assets - PassQuirkRPG/Npcs/Tutorial_Sabio-1920x1080.png',
+    ICONO_V1: 'e:/PassQuirk/PassQuirkRPG/Documentación - Juego/Assets - PassQuirkRPG/Iconos - Marca - PassQuirk/Icono - PassQuirk V1.png',
+    PASSCOIN: '<:PassCoin:1441951548719759511>'
+};
+
+async function mostrarSpaceCentralUnificado(interaction, client) {
+    const userId = interaction.user.id;
+    const player = await client.gameManager.getPlayer(userId);
+    const nombreUsuario = player ? player.name : interaction.user.username;
+
+    if (!player) {
+        await interaction.reply({ content: '❌ No tienes un personaje creado. Usa `/passquirkrpg` para comenzar.', ephemeral: true });
+        return;
+    }
+
+    // Actualizar ubicación
+    if (!player.exploration) player.exploration = {};
+    player.exploration.currentZone = 'Space Central';
+    
+    // Mark as visited
+    if (!player.exploration.visitedSpaceCentral) {
+        player.exploration.visitedSpaceCentral = true;
+    }
+    await client.gameManager.playerDB.savePlayer(player);
+
+    // --- LÓGICA DE MISIONES (ELSABIO) ---
+    let sabioText = "";
+    let sabioTitle = "ElSabio: Space Central";
+    
+    // Misión 1: Bosque Inicial (Conseguir dinero)
+    if (!player.mission || player.mission.id === 'mision_tutorial_bosque') {
+        if (!player.mission) {
+            player.mission = { 
+                id: 'mision_tutorial_bosque', 
+                status: 'active', 
+                desc: 'Consigue 50 PassCoins en el Bosque Inicial para pagar el Hotel.' 
+            };
+            await client.gameManager.playerDB.savePlayer(player);
+        }
+
+        if (player.mission.status === 'active') {
+            sabioTitle = "ElSabio: Primera Misión";
+            sabioText = `**ElSabio:** ¡Bienvenido a **Space Central**, **${nombreUsuario}**!\n\n` +
+                `Antes de que te acomodes, hay un problema: **No tienes dinero**.\n` +
+                `Necesitas **50 PassCoins** para alquilar una habitación en el Hotel y asegurar tus pertenencias.\n\n` +
+                `🌲 **Tu Tarea:** Ve a **Explorar** -> **Bosque Inicial** y consigue esas monedas.\n` +
+                `*No vuelvas hasta que tengas suficiente.*`;
+        }
+    } 
+    // Misión 2: Viaje al Reino
+    else if (player.mission.id === 'mision_viaje_reino') {
+        if (player.mission.status === 'active') {
+            sabioTitle = "ElSabio: El Llamado del Hogar";
+            sabioText = `**ElSabio:** ¡Bien hecho con esas monedas! Ahora tienes un lugar seguro.\n\n` +
+                `Es hora de que visites tu verdadero origen.\n` +
+                `Ve al **Portal de los Reinos** (o usa Explorar) y viaja a tu **Reino Racial**.\n` +
+                `*Allí encontrarás a tus iguales y aprenderás más sobre tu raza.*`;
+        } else {
+            sabioText = `**ElSabio:** Has cumplido con tus primeros deberes. Ahora el mundo es tuyo para explorar.`;
+        }
+    } 
+    // Misión 3: Libertad / Default
+    else {
+        sabioText = `**ElSabio:** Space Central es el nexo de todo. Explora, comercia y prepárate para tus próximas aventuras.`;
+    }
+
+    // --- EMBED 1: ELSABIO (NARRATIVA) ---
+    const embedSabio = new EmbedBuilder()
+        .setTitle(`🧙‍♂️ **${sabioTitle}**`)
+        .setDescription(sabioText)
+        .setColor(COLORES.AMARILLO_TUTORIAL)
+        .setImage('attachment://Tutorial_Sabio-1920x1080.png')
+        .setFooter({ text: 'ElSabio • Guía del Aventurero' });
+
+    // --- EMBED 2: SPACE CENTRAL HUB (GAMEPLAY) ---
+    const embedHub = new EmbedBuilder()
+        .setTitle(`⭐ **Space Central: El Nexo**`)
+        .setDescription(
+            `El corazón del multiverso PassQuirk. Aquí convergen todos los caminos.\n\n` +
+            `🏨 **Hotel:** Descanso y Guardado (Desbloqueo: 50 PC)\n` +
+            `⚔️ **Armería:** Compra y mejora de equipo\n` +
+            `🌀 **Portal:** Viaje a Reinos Raciales\n` +
+            `🗺️ **Explorar:** Zonas salvajes (Bosques, Mazmorras)`
+        )
+        .setColor(COLORES.PURPURA_MISTICO)
+        .setImage('attachment://SpaceCentral_Concept.png') // Usamos el icono como "Concept Image"
+        .setFooter({ text: 'Space Central • Hub Principal' });
+
+    // --- BOTONES (UNIFICADOS) ---
+    const row1 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId('hub_explorar').setLabel('Explorar').setStyle(ButtonStyle.Success).setEmoji('🗺️'),
+        new ButtonBuilder().setCustomId('hub_hotel').setLabel('Hotel').setStyle(ButtonStyle.Primary).setEmoji('🏨'),
+        new ButtonBuilder().setCustomId('hub_armeria').setLabel('Armería').setStyle(ButtonStyle.Primary).setEmoji('⚔️')
+    );
+    
+    const row2 = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId('hub_portal').setLabel('Portal Reinos').setStyle(ButtonStyle.Primary).setEmoji('🌀'),
+        new ButtonBuilder().setCustomId('hub_perfil').setLabel('Perfil').setStyle(ButtonStyle.Secondary).setEmoji('👤'),
+        new ButtonBuilder().setCustomId('hub_ayuda').setLabel('Ayuda').setStyle(ButtonStyle.Secondary).setEmoji('❓')
+    );
+
+    // --- ADJUNTOS ---
+    const files = [];
+    if (fs.existsSync(PATHS.SABIO_BANNER)) {
+        files.push({ attachment: PATHS.SABIO_BANNER, name: 'Tutorial_Sabio-1920x1080.png' });
+    } else {
+        embedSabio.setImage(null);
+    }
+
+    if (fs.existsSync(PATHS.ICONO_V1)) {
+        files.push({ attachment: PATHS.ICONO_V1, name: 'SpaceCentral_Concept.png' });
+    } else {
+        embedHub.setImage(null);
+    }
+
+    // --- ENVIAR RESPUESTA ---
+    // Manejar diferido/respuesta
+    if (interaction.replied || interaction.deferred) {
+        await interaction.editReply({ embeds: [embedSabio, embedHub], components: [row1, row2], files: files });
+    } else {
+        // Si es un comando slash nuevo, reply normal (o defer si tarda)
+        // Aquí asumimos que si no está deferido, hacemos reply.
+        await interaction.reply({ embeds: [embedSabio, embedHub], components: [row1, row2], files: files });
+    }
+}
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('spacecentral')
         .setDescription('Viaja a Space Central, el centro del universo PassQuirk.'),
     async execute(interaction, client) {
-        const userId = interaction.user.id;
-        const player = await client.gameManager.getPlayer(userId);
+        // Handle button interactions delegated to this command
+        if (interaction.isButton()) {
+            const action = interaction.customId;
+            
+            // Navegación
+            if (action === 'hub_explorar') return client.commands.get('explorar').execute(interaction, client);
+            if (action === 'hub_perfil') return client.commands.get('perfil').execute(interaction, client);
+            if (action === 'hub_ayuda') return client.commands.get('ayuda').execute(interaction, client);
+            
+            // Hotel
+            if (action === 'hub_hotel') return this.mostrarHotel(interaction, client);
+            if (action === 'hub_hotel_rent') return this.rentHotelRoom(interaction, client);
+            
+            // Armería
+            if (action === 'hub_armeria') return interaction.reply({ content: '⚔️ La Armería está recibiendo suministros. ¡Vuelve pronto!', ephemeral: true });
+            
+            // Portal
+            if (action === 'hub_portal') return client.commands.get('explorar').execute(interaction, client); // Portal redirige a explorar por ahora
 
-        if (!player) {
-            await interaction.reply({ content: '❌ No tienes un personaje creado. Usa `/passquirkrpg` para comenzar.', ephemeral: true });
-            return;
+            // Volver
+            if (action === 'hub_back' || action === 'ir_space_central') return mostrarSpaceCentralUnificado(interaction, client);
         }
 
-        // Actualizar ubicación
-        player.exploration.currentZone = 'Space Central';
-        await client.gameManager.playerDB.savePlayer(player);
+        // Comando Slash Normal
+        // Defer para asegurar tiempo de respuesta
+        if (!interaction.replied && !interaction.deferred) await interaction.deferReply();
+        
+        await mostrarSpaceCentralUnificado(interaction, client);
+    },
 
-        // Reproducir música de Space Central
-        if (musicManager) {
-            const member = interaction.member;
-            if (member && member.voice.channel) {
-                try {
-                    await musicManager.joinChannel(member.voice.channel);
-                    musicManager.playFile('e:/PassQuirk/PassQuirkRPG/documentation/Doc-Oficial/Música/Aventura - PassQuirk.wav', true);
-                } catch (e) { console.error('Error playing Space Central music:', e); }
-            }
-        }
+    // Métodos auxiliares exportados para uso externo si es necesario
+    mostrarSpaceCentralUnificado,
 
-        const emojiPortal = '🌀';
-        const emojiCity = '🏙️';
+    async mostrarHotel(interaction, client) {
+        const player = await client.gameManager.getPlayer(interaction.user.id);
         const emojiHotel = '🏨';
-        const emojiMap = '🗺️';
-        const emojiProfile = '👤';
-
-        // Check if this is the player's first visit
-        const firstVisit = !player.exploration?.visitedSpaceCentral;
-
-        // Mark as visited for future checks
-        if (!player.exploration) player.exploration = {};
-        if (!player.exploration.visitedSpaceCentral) {
-            player.exploration.visitedSpaceCentral = true;
-            await client.gameManager.playerDB.savePlayer(player);
-        }
-
-        let embedDescription = `${emojiPortal} **Bienvenido a Space Central**, viajero.\n\n`;
-
-        // Add first-time visitor onboarding
-        if (firstVisit) {
-            embedDescription += `> [!IMPORTANT]\n` +
-                `> 🗺️ **¡Guarda este lugar!**\n` +
-                `> Para volver aquí en cualquier momento, usa el comando \`/spacecentral\`.\n` +
-                `> Este es tu nexo principal para viajar, curarte y gestionar tu cuenta.\n\n`;
-        }
-
-        embedDescription += `Aquí puedes descansar, comerciar y prepararte para tu próxima aventura.\n\n` +
-            `**Lugares de Interés:**\n` +
-            `> ${emojiHotel} **Gran Hotel:** Descansa y recupera tu salud.\n` +
-            `> ${emojiMap} **Portal de Exploración:** Viaja a otros reinos.\n` +
-            `> ${emojiProfile} **Centro de Datos:** Consulta tu perfil.\n\n` +
-            `*La ciudad nunca duerme, y las oportunidades son infinitas.*`;
+        const emojiCoin = PATHS.PASSCOIN;
 
         const embed = new EmbedBuilder()
-            .setTitle(`${emojiCity} **Space Central**`)
-            .setDescription(embedDescription)
-            .setColor('#9B59B6')
-            .setImage('attachment://Icono_PassQuirk_V1.png')
-            .setFooter({ text: 'Space Central • Zona Segura' });
+            .setTitle(`${emojiHotel} **Gran Hotel Space Central**`)
+            .setDescription(`Bienvenido al Gran Hotel. Aquí puedes descansar y recuperarte.\n\n` +
+                `**Servicios Disponibles:**\n` +
+                `> **Habitación Estándar:** Recupera 100% HP y MP.\n` +
+                `> **Costo:** 50 ${emojiCoin} PassCoins\n\n` +
+                `*Tu saldo actual:* ${player.inventory?.gold || 0} ${emojiCoin}`)
+            .setColor('#F1C40F')
+            .setFooter({ text: 'Gran Hotel • Descanso Garantizado' });
 
         const row = new ActionRowBuilder()
             .addComponents(
                 new ButtonBuilder()
-                    .setCustomId('hub_hotel')
-                    .setLabel('Ir al Hotel')
-                    .setEmoji(emojiHotel)
-                    .setStyle(ButtonStyle.Primary),
+                    .setCustomId('hub_hotel_rent')
+                    .setLabel('Alquilar Habitación (50 PC)')
+                    .setEmoji('🛏️')
+                    .setStyle(ButtonStyle.Success)
+                    .setDisabled((player.inventory?.gold || 0) < 50),
                 new ButtonBuilder()
-                    .setCustomId('hub_explore')
-                    .setLabel('Explorar')
-                    .setEmoji(emojiMap)
-                    .setStyle(ButtonStyle.Success),
-                new ButtonBuilder()
-                    .setCustomId('hub_profile')
-                    .setLabel('Perfil')
-                    .setEmoji(emojiProfile)
+                    .setCustomId('hub_back')
+                    .setLabel('Volver al Centro')
+                    .setEmoji('⬅️')
                     .setStyle(ButtonStyle.Secondary)
             );
+        
+        // Update or Reply based on context
+        if (interaction.replied || interaction.deferred) {
+             // Si es un update de botón, usamos editReply o update
+             // Al ser un sub-menú, update es más limpio visualmente si reemplaza el mensaje original
+             // Pero como Space Central son 2 embeds, y esto es 1, mejor editReply
+             await interaction.editReply({ embeds: [embed], components: [row], files: [] });
+        } else {
+             await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+        }
+    },
 
-        const files = [{
-            attachment: 'e:/PassQuirk/PassQuirkRPG/documentation/Doc-Oficial/Imagenes - Diseño/Npc - Imagenes/Icono - PassQuirk V1.png',
-            name: 'Icono_PassQuirk_V1.png'
-        }];
+    async rentHotelRoom(interaction, client) {
+        const player = await client.gameManager.getPlayer(interaction.user.id);
+        const currentGold = player.inventory?.gold || 0;
+        const emojiCoin = PATHS.PASSCOIN;
 
-        await interaction.reply({ embeds: [embed], components: [row], files: files });
+        if (currentGold < 50) {
+            await interaction.reply({ content: `❌ No tienes suficientes PassCoins (50 requeridos). Tienes ${currentGold} ${emojiCoin}`, ephemeral: true });
+            return;
+        }
+
+        // Deducir costo
+        if (!player.inventory) player.inventory = { gold: 0, items: {} };
+        player.inventory.gold = currentGold - 50;
+
+        // Curar jugador
+        player.stats.hp = player.stats.maxHp || 100;
+        player.stats.mp = player.stats.maxMp || 50;
+
+        // Verificar Misión 1 (Tutorial)
+        let missionMsg = '';
+        let misionCompletada = false;
+        if (player.mission && player.mission.id === 'mision_tutorial_bosque') {
+            player.mission.status = 'completed';
+            player.mission.completedAt = new Date().toISOString();
+            
+            // Asignar siguiente misión
+            player.mission = {
+                id: 'mision_viaje_reino',
+                status: 'active',
+                step: 'intro',
+                description: 'Usa el Portal de Exploración para viajar a tu Reino Racial.'
+            };
+            missionMsg = '\n\n📜 **¡Misión Actualizada!**\nHas descansado en el hotel. Ahora estás listo para viajar a tu reino.';
+            misionCompletada = true;
+        }
+
+        await client.gameManager.playerDB.savePlayer(player);
+
+        const embed = new EmbedBuilder()
+            .setTitle('🛏️ **Descanso Completado**')
+            .setDescription(`Has descansado en una habitación cómoda.\n\n` +
+                `**¡HP y MP restaurados al máximo!**\n` +
+                `Saldo restante: ${player.inventory.gold} ${emojiCoin}${missionMsg}`)
+            .setColor('#2ECC71');
+            
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('hub_back').setLabel('Volver a Space Central').setStyle(ButtonStyle.Primary).setEmoji('🔙')
+        );
+
+        await interaction.update({ embeds: [embed], components: [row] });
     },
 
     async handleInteraction(interaction, client) {
-        const id = interaction.customId;
-        const userId = interaction.user.id;
-        const player = await client.gameManager.getPlayer(userId);
-
-        if (!player) return;
-
-        if (id === 'hub_hotel') {
-            const emojiHotel = '🏨';
-            const emojiCoin = '🪙';
-
-            const embed = new EmbedBuilder()
-                .setTitle(`${emojiHotel} **Gran Hotel Space Central**`)
-                .setDescription(`Bienvenido al Gran Hotel. Aquí puedes descansar y recuperarte.\n\n` +
-                    `**Servicios Disponibles:**\n` +
-                    `> **Habitación Estándar:** Recupera 100% HP y MP.\n` +
-                    `> **Costo:** 50 ${emojiCoin} PassCoins\n\n` +
-                    `*Tu saldo actual:* ${player.economy?.passcoins || 0} ${emojiCoin}`)
-                .setColor('#F1C40F')
-                .setFooter({ text: 'Gran Hotel • Descanso Garantizado' });
-
-            const row = new ActionRowBuilder()
-                .addComponents(
-                    new ButtonBuilder()
-                        .setCustomId('hub_hotel_rent')
-                        .setLabel('Alquilar Habitación (50 PC)')
-                        .setEmoji('🛏️')
-                        .setStyle(ButtonStyle.Success)
-                        .setDisabled((player.economy?.passcoins || 0) < 50),
-                    new ButtonBuilder()
-                        .setCustomId('hub_back')
-                        .setLabel('Volver al Centro')
-                        .setEmoji('⬅️')
-                        .setStyle(ButtonStyle.Secondary)
-                );
-
-            await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
-
-        } else if (id === 'hub_hotel_rent') {
-            if ((player.economy?.passcoins || 0) < 50) {
-                await interaction.reply({ content: '❌ No tienes suficientes PassCoins.', ephemeral: true });
-                return;
-            }
-
-            // Deducir costo
-            player.economy.passcoins -= 50;
-
-            // Curar jugador
-            player.stats.hp = 100 + ((player.level - 1) * 15); // Max HP calculation roughly
-            player.stats.mp = 50 + ((player.level - 1) * 8);   // Max MP calculation roughly
-
-            await client.gameManager.playerDB.savePlayer(player);
-
-            const embed = new EmbedBuilder()
-                .setTitle('🛏️ **Descanso Completado**')
-                .setDescription(`Has descansado en una habitación cómoda.\n\n` +
-                    `**¡HP y MP restaurados al máximo!**\n` +
-                    `Saldo restante: ${player.economy.passcoins} PassCoins`)
-                .setColor('#2ECC71');
-
-            await interaction.update({ embeds: [embed], components: [] });
-
-        } else if (id === 'hub_back') {
-            const emojiPortal = '🌀';
-            const emojiCity = '🏙️';
-            const emojiHotel = '🏨';
-            const emojiMap = '🗺️';
-            const emojiProfile = '👤';
-
-            const embed = new EmbedBuilder()
-                .setTitle(`${emojiCity} **Space Central**`)
-                .setDescription(`${emojiPortal} **Bienvenido a Space Central**, viajero.\n\n` +
-                    `Aquí puedes descansar, comerciar y prepararte para tu próxima aventura.\n\n` +
-                    `**Lugares de Interés:**\n` +
-                    `> ${emojiHotel} **Gran Hotel:** Descansa y recupera tu salud.\n` +
-                    `> ${emojiMap} **Portal de Exploración:** Viaja a otros reinos.\n` +
-                    `> ${emojiProfile} **Centro de Datos:** Consulta tu perfil.\n\n` +
-                    `*La ciudad nunca duerme, y las oportunidades son infinitas.*`)
-                .setColor('#9B59B6')
-                .setFooter({ text: 'Space Central • Zona Segura' });
-
-            const row = new ActionRowBuilder()
-                .addComponents(
-                    new ButtonBuilder().setCustomId('hub_hotel').setLabel('Ir al Hotel').setEmoji(emojiHotel).setStyle(ButtonStyle.Primary),
-                    new ButtonBuilder().setCustomId('hub_explore').setLabel('Explorar').setEmoji(emojiMap).setStyle(ButtonStyle.Success),
-                    new ButtonBuilder().setCustomId('hub_profile').setLabel('Perfil').setEmoji(emojiProfile).setStyle(ButtonStyle.Secondary)
-                );
-
-            const files = [{
-                attachment: 'e:/PassQuirk/PassQuirkRPG/documentation/Doc-Oficial/Imagenes - Diseño/Npc - Imagenes/Icono - PassQuirk V1.png',
-                name: 'Icono_PassQuirk_V1.png'
-            }];
-
-            await interaction.update({ embeds: [embed], components: [row], files: files });
-
-        } else if (id === 'hub_explore') {
-            const explorarCmd = client.commands.get('explorar');
-            if (explorarCmd) await explorarCmd.execute(interaction, client);
-        } else if (id === 'hub_profile') {
-            const perfilCmd = client.commands.get('perfil');
-            if (perfilCmd) await perfilCmd.execute(interaction, client);
-        }
+        // Legacy handler wrapper
+        return this.execute(interaction, client);
     }
 };

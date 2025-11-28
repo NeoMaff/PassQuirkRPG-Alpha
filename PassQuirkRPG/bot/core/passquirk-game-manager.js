@@ -8,16 +8,16 @@ const fs = require('fs');
 const path = require('path');
 
 // Importar sistemas del juego
-const { PlayerDatabase } = require('../data/player-database');
-const passquirkData = require('../data/passquirk-official-data');
+const playerDatabase = require('../../src/data/player-database');
+const passquirkData = require('../../src/data/passquirk-official-data');
 
 class PassQuirkGameManager {
     constructor(client) {
         this.client = client;
-        this.playerDB = new PlayerDatabase();
+        this.playerDB = playerDatabase;
         this.activeSessions = new Map();
         this.gameData = passquirkData;
-        
+
         // Sistemas del juego
         this.systems = {
             combat: null,      // Sistema de combate
@@ -28,13 +28,13 @@ class PassQuirkGameManager {
             quests: null,      // Sistema de misiones
             dialogue: null     // Sistema de diálogos
         };
-        
+
         // Inicializar sistemas
         this.initializeSystems();
-        
+
         console.log('🎮 PassQuirk Game Manager inicializado');
     }
-    
+
     /**
      * Inicializa todos los subsistemas del juego
      */
@@ -43,49 +43,56 @@ class PassQuirkGameManager {
         try {
             // Ruta base para los sistemas
             const systemsPath = path.join(__dirname, '../../src/systems');
-            
+
             // Cargar sistema de combate
             if (fs.existsSync(path.join(systemsPath, 'combat-system.js'))) {
                 const CombatSystem = require(path.join(systemsPath, 'combat-system.js'));
                 this.systems.combat = new CombatSystem(this);
                 console.log('⚔️ Sistema de combate cargado');
             }
-            
+
             // Cargar sistema de exploración
             if (fs.existsSync(path.join(systemsPath, 'exploration-system.js'))) {
                 const ExplorationSystem = require(path.join(systemsPath, 'exploration-system.js'));
                 this.systems.exploration = new ExplorationSystem(this);
                 console.log('🗺️ Sistema de exploración cargado');
             }
-            
+
             // Cargar sistema de inventario
             if (fs.existsSync(path.join(systemsPath, 'inventory-system.js'))) {
                 const InventorySystem = require(path.join(systemsPath, 'inventory-system.js'));
                 this.systems.inventory = new InventorySystem(this);
                 console.log('🎒 Sistema de inventario cargado');
             }
-            
+
             // Cargar sistema de quirks
             if (fs.existsSync(path.join(systemsPath, 'quirks-system.js'))) {
                 const QuirksSystem = require(path.join(systemsPath, 'quirks-system.js'));
                 this.systems.quirks = new QuirksSystem(this);
                 console.log('✨ Sistema de quirks cargado');
             }
-            
+
             // Cargar sistema de tienda
             if (fs.existsSync(path.join(systemsPath, 'shop-system.js'))) {
                 const { ShopSystem } = require(path.join(systemsPath, 'shop-system.js'));
                 this.systems.shop = ShopSystem;
                 console.log('🛒 Sistema de tienda cargado');
             }
-            
+
             // Cargar sistema de misiones
             if (fs.existsSync(path.join(systemsPath, 'quest-system.js'))) {
                 const QuestSystem = require(path.join(systemsPath, 'quest-system.js'));
                 this.systems.quests = new QuestSystem(this);
                 console.log('📜 Sistema de misiones cargado');
             }
-            
+
+            // Cargar sistema de mundo (WorldSystem)
+            if (fs.existsSync(path.join(systemsPath, 'world-system.js'))) {
+                const WorldSystem = require(path.join(systemsPath, 'world-system.js'));
+                this.systems.world = new WorldSystem(this);
+                console.log('🌍 Sistema de mundo cargado');
+            }
+
             // Cargar sistema de diálogos
             if (this.client && this.client.dialogueManager) {
                 this.systems.dialogue = this.client.dialogueManager;
@@ -95,7 +102,7 @@ class PassQuirkGameManager {
             console.error('Error al inicializar sistemas del juego:', error);
         }
     }
-    
+
     /**
      * Obtiene los datos de un jugador
      * @param {string} userId - ID del usuario
@@ -104,7 +111,7 @@ class PassQuirkGameManager {
     async getPlayer(userId) {
         return await this.playerDB.getPlayer(userId);
     }
-    
+
     /**
      * Crea un nuevo personaje para un jugador
      * @param {string} userId - ID del usuario
@@ -114,26 +121,26 @@ class PassQuirkGameManager {
      */
     async createCharacter(userId, username, characterData) {
         const { name, className, passquirkName, description, avatarURL } = characterData;
-        
+
         // Verificar si el jugador ya existe
         const existingPlayer = await this.playerDB.getPlayer(userId);
         if (existingPlayer && existingPlayer.class !== 'Novato') {
             throw new Error('Ya tienes un personaje creado');
         }
-        
+
         // Verificar compatibilidad de clase y passquirk
         const passquirk = this.getPassquirkByName(passquirkName);
         if (!passquirk) {
             throw new Error(`PassQuirk no encontrado: ${passquirkName}`);
         }
-        
+
         if (!passquirk.compatibleClasses.includes(className)) {
             throw new Error(`La clase ${className} no es compatible con el PassQuirk ${passquirkName}`);
         }
-        
+
         // Crear o actualizar jugador
         const player = existingPlayer || await this.playerDB.createPlayer(userId, username);
-        
+
         // Actualizar datos del personaje
         player.name = name;
         player.class = className;
@@ -146,16 +153,16 @@ class PassQuirkGameManager {
         };
         player.description = description;
         player.avatarURL = avatarURL;
-        
+
         // Aplicar bonificaciones de clase
         this.applyClassBonuses(player, className);
-        
+
         // Guardar jugador
         await this.playerDB.savePlayer(player);
-        
+
         return player;
     }
-    
+
     /**
      * Aplica bonificaciones de estadísticas según la clase
      * @param {Object} player - Datos del jugador
@@ -219,7 +226,7 @@ class PassQuirkGameManager {
                 creativity: 15
             }
         };
-        
+
         // Aplicar bonificaciones si la clase existe
         if (bonuses[className]) {
             const classBonus = bonuses[className];
@@ -230,7 +237,7 @@ class PassQuirkGameManager {
             }
         }
     }
-    
+
     /**
      * Obtiene un PassQuirk por su nombre
      * @param {string} name - Nombre del PassQuirk
@@ -244,35 +251,131 @@ class PassQuirkGameManager {
         }
         return null;
     }
-    
+
+    /**
+     * Parsea un rango de niveles (ej: "1-5", "10+", "Any")
+     * @param {string} rangeStr - String de rango
+     * @returns {Object} {min, max}
+     */
+    parseLevelRange(rangeStr) {
+        if (!rangeStr || rangeStr === 'Any') return { min: 1, max: 999 };
+        if (typeof rangeStr === 'number') return { min: rangeStr, max: rangeStr };
+        
+        const str = String(rangeStr);
+        if (str.endsWith('+')) {
+            const val = parseInt(str);
+            return { min: val, max: 999 };
+        }
+        
+        const parts = str.split('-');
+        if (parts.length === 2) {
+            return { min: parseInt(parts[0]), max: parseInt(parts[1]) };
+        }
+        
+        const val = parseInt(str);
+        return { min: isNaN(val) ? 1 : val, max: isNaN(val) ? 999 : val };
+    }
+
     /**
      * Obtiene un enemigo aleatorio según el nivel del jugador
      * @param {number} playerLevel - Nivel del jugador
-     * @param {string} zone - Zona de exploración (opcional)
+     * @param {string} zoneId - ID de la zona de exploración (opcional)
      * @returns {Object} Datos del enemigo
      */
-    getRandomEnemy(playerLevel, zone = null) {
-        // Implementar lógica para seleccionar enemigo según nivel y zona
-        const availableEnemies = Object.values(this.gameData.ENEMIES).filter(enemy => {
-            // Filtrar por nivel
-            const levelMatch = enemy.level <= playerLevel + 2 && enemy.level >= playerLevel - 3;
-            
-            // Filtrar por zona si se especifica
-            const zoneMatch = !zone || !enemy.zones || enemy.zones.includes(zone);
-            
-            return levelMatch && zoneMatch;
-        });
-        
-        if (availableEnemies.length === 0) {
-            // Si no hay enemigos disponibles, devolver un enemigo básico
-            return this.gameData.ENEMIES.slime;
+    getRandomEnemy(playerLevel, zoneId = null) {
+        let candidates = [];
+        const enemiesByZone = this.gameData.ENEMIES_BY_ZONE || {};
+
+        // Helper para procesar enemigos de una zona
+        const processZone = (zId, zoneData) => {
+             if (!zoneData || !zoneData.enemies) return;
+             
+             Object.entries(zoneData.enemies).forEach(([enemyId, enemy]) => {
+                 const range = this.parseLevelRange(enemy.level);
+                 
+                 // Si se especificó zona, somos más flexibles con el nivel
+                 if (zoneId) {
+                     candidates.push({ ...enemy, id: enemyId, zoneId: zId });
+                 } else {
+                     // Si es búsqueda general, buscar por nivel apropiado
+                     if (playerLevel >= range.min && playerLevel <= range.max) {
+                         candidates.push({ ...enemy, id: enemyId, zoneId: zId });
+                     }
+                 }
+             });
+        };
+
+        if (zoneId && enemiesByZone[zoneId]) {
+            processZone(zoneId, enemiesByZone[zoneId]);
+        } else {
+            // Buscar en todas las zonas
+            Object.entries(enemiesByZone).forEach(([zId, zData]) => {
+                processZone(zId, zData);
+            });
+        }
+
+        if (candidates.length === 0) {
+            // Fallback: Buscar cualquier enemigo si no hay coincidencias exactas
+             Object.entries(enemiesByZone).forEach(([zId, zData]) => {
+                 if (zData.enemies) {
+                     Object.entries(zData.enemies).forEach(([enemyId, enemy]) => {
+                         candidates.push({ ...enemy, id: enemyId, zoneId: zId });
+                     });
+                 }
+            });
         }
         
-        // Seleccionar enemigo aleatorio
-        const randomIndex = Math.floor(Math.random() * availableEnemies.length);
-        return availableEnemies[randomIndex];
+        if (candidates.length === 0) {
+             // Fallback final por si no hay datos cargados
+             return { 
+                 name: "Slime Perdido", 
+                 level: "1", 
+                 rarity: "Mundano", 
+                 emoji: "💧", 
+                 hp: 50, 
+                 attack: 5,
+                 xp: 10,
+                 coins: 5
+             };
+        }
+
+        // Seleccionar enemigo aleatorio de los candidatos
+        const selected = candidates[Math.floor(Math.random() * candidates.length)];
+        
+        // Calcular stats basados en el nivel del jugador para escalar un poco
+        // (Los datos oficiales no tienen stats base numéricos, así que los generamos dinámicamente)
+        const level = playerLevel > 0 ? playerLevel : 1;
+        
+        // Base stats
+        const baseHp = 50 + (level * 10);
+        const baseAtk = 5 + (level * 2);
+        
+        // Multiplicadores por rareza
+        const rarityMultipliers = {
+            "Mundano": 1,
+            "Refinado": 1.2,
+            "Sublime": 1.5,
+            "Supremo": 2.0,
+            "Trascendente": 3.0,
+            "Celestial": 5.0,
+            "Dragón": 8.0,
+            "Caos": 10.0,
+            "Cósmico": 15.0
+        };
+        
+        const multiplier = rarityMultipliers[selected.rarity] || 1;
+        
+        return {
+            ...selected,
+            hp: Math.floor(baseHp * multiplier),
+            maxHp: Math.floor(baseHp * multiplier),
+            attack: Math.floor(baseAtk * multiplier),
+            defense: Math.floor(level * multiplier),
+            xp: Math.floor(level * 10 * multiplier),
+            coins: Math.floor(level * 5 * multiplier)
+        };
     }
-    
+
     /**
      * Inicia una sesión de juego para un usuario
      * @param {string} userId - ID del usuario
@@ -282,7 +385,7 @@ class PassQuirkGameManager {
      */
     startSession(userId, sessionType, sessionData = {}) {
         const sessionId = `${sessionType}_${userId}_${Date.now()}`;
-        
+
         this.activeSessions.set(sessionId, {
             userId,
             type: sessionType,
@@ -290,10 +393,10 @@ class PassQuirkGameManager {
             data: sessionData,
             status: 'active'
         });
-        
+
         return sessionId;
     }
-    
+
     /**
      * Finaliza una sesión de juego
      * @param {string} sessionId - ID de la sesión
@@ -303,17 +406,17 @@ class PassQuirkGameManager {
         if (!this.activeSessions.has(sessionId)) {
             return false;
         }
-        
+
         const session = this.activeSessions.get(sessionId);
         session.status = 'completed';
         session.endTime = Date.now();
-        
+
         // Guardar resultados de la sesión si es necesario
-        
+
         this.activeSessions.delete(sessionId);
         return true;
     }
-    
+
     /**
      * Obtiene una sesión activa por su ID
      * @param {string} sessionId - ID de la sesión
@@ -322,7 +425,7 @@ class PassQuirkGameManager {
     getSession(sessionId) {
         return this.activeSessions.get(sessionId) || null;
     }
-    
+
     /**
      * Obtiene todas las sesiones activas de un usuario
      * @param {string} userId - ID del usuario
@@ -330,7 +433,7 @@ class PassQuirkGameManager {
      */
     getUserSessions(userId) {
         const sessions = [];
-        
+
         for (const [sessionId, session] of this.activeSessions.entries()) {
             if (session.userId === userId && session.status === 'active') {
                 sessions.push({
@@ -339,7 +442,7 @@ class PassQuirkGameManager {
                 });
             }
         }
-        
+
         return sessions;
     }
 
@@ -352,13 +455,13 @@ class PassQuirkGameManager {
     async getMissionState(userId, missionId) {
         const player = await this.getPlayer(userId);
         if (!player) return null;
-        
+
         if (!player.missions) player.missions = {};
         if (!player.missions[missionId]) player.missions[missionId] = { variables: {}, progress: 0, status: 'not_started' };
-        
+
         return player.missions[missionId];
     }
-    
+
     /**
      * Establece una variable para una misión
      * @param {string} userId - ID del usuario
@@ -369,16 +472,16 @@ class PassQuirkGameManager {
     async setMissionVariable(userId, missionId, variable, value) {
         const player = await this.getPlayer(userId);
         if (!player) return false;
-        
+
         if (!player.missions) player.missions = {};
         if (!player.missions[missionId]) player.missions[missionId] = { variables: {}, progress: 0, status: 'not_started' };
-        
+
         player.missions[missionId].variables[variable] = value;
         await this.playerDB.savePlayer(player);
-        
+
         return true;
     }
-    
+
     /**
      * Actualiza el progreso de una misión
      * @param {string} userId - ID del usuario
@@ -389,17 +492,17 @@ class PassQuirkGameManager {
     async updateMissionProgress(userId, missionId, progress, status) {
         const player = await this.getPlayer(userId);
         if (!player) return false;
-        
+
         if (!player.missions) player.missions = {};
         if (!player.missions[missionId]) player.missions[missionId] = { variables: {}, progress: 0, status: 'not_started' };
-        
+
         player.missions[missionId].progress = progress;
         player.missions[missionId].status = status;
         await this.playerDB.savePlayer(player);
-        
+
         return true;
     }
-    
+
     /**
      * Limpia el estado de una misión
      * @param {string} userId - ID del usuario
@@ -408,15 +511,15 @@ class PassQuirkGameManager {
     async clearMissionState(userId, missionId) {
         const player = await this.getPlayer(userId);
         if (!player || !player.missions) return false;
-        
+
         if (player.missions[missionId]) {
             delete player.missions[missionId];
             await this.playerDB.savePlayer(player);
         }
-        
+
         return true;
     }
-    
+
     /**
      * Maneja las interacciones de botones delegándolas a los sistemas correspondientes
      * @param {Object} interaction - Interacción de botón de Discord
@@ -424,33 +527,33 @@ class PassQuirkGameManager {
      */
     async handleButtonInteraction(interaction) {
         const customId = interaction.customId;
-        
+
         try {
             // Delegar a sistema de combate
             if (this.systems.combat && await this.systems.combat.handleButtonInteraction(interaction)) {
                 return true;
             }
-            
+
             // Delegar a sistema de exploración
             if (this.systems.exploration && await this.systems.exploration.handleButtonInteraction(interaction)) {
                 return true;
             }
-            
+
             // Delegar a sistema de diálogos
             if (this.systems.dialogue && await this.systems.dialogue.handleButtonInteraction(interaction)) {
                 return true;
             }
-            
+
             // Si ningún sistema maneja la interacción, registrar para debug
             console.log(`⚠️ Interacción de botón no manejada: ${customId}`);
             return false;
-            
+
         } catch (error) {
             console.error('Error en GameManager.handleButtonInteraction:', error);
             throw error;
         }
     }
-    
+
     /**
      * Maneja las interacciones de menús de selección delegándolas a los sistemas correspondientes
      * @param {Object} interaction - Interacción de menú de selección de Discord
@@ -458,24 +561,24 @@ class PassQuirkGameManager {
      */
     async handleSelectMenuInteraction(interaction) {
         const customId = interaction.customId;
-        
+
         try {
             // Delegar a sistema de inventario
             if (this.systems.inventory && customId.startsWith('inventory_')) {
                 // El sistema de inventario maneja sus propios menús de selección
                 return false; // Por ahora no implementado
             }
-            
+
             // Delegar a sistema de tienda
             if (this.systems.shop && customId.startsWith('shop_')) {
                 // El sistema de tienda maneja sus propios menús de selección
                 return false; // Por ahora no implementado
             }
-            
+
             // Si ningún sistema maneja la interacción, registrar para debug
             console.log(`⚠️ Interacción de menú no manejada: ${customId}`);
             return false;
-            
+
         } catch (error) {
             console.error('Error en GameManager.handleSelectMenuInteraction:', error);
             throw error;

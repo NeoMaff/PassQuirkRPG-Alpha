@@ -2,934 +2,845 @@
  * Sistema de Exploración para PassQuirk RPG
  * 
  * Este sistema maneja todas las mecánicas de exploración del juego:
- * - Exploración de zonas
- * - Eventos aleatorios
- * - Descubrimientos y tesoros
+ * - Exploración de zonas (Auto/Manual)
+ * - Eventos aleatorios (Combate, Minería, Pesca)
+ * - Descubrimientos (Items)
  * - Progresión de zonas
  */
 
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { COLORS, EMOJIS } = require('../utils/embedStyles');
+const { ENEMIES_BY_ZONE } = require('../data/passquirk-official-data');
+const RARITIES = require('../data/rarities');
+const PassSystem = require('./passystem');
 
 class ExplorationSystem {
     constructor(gameManager) {
         this.gameManager = gameManager;
         this.activeExplorations = new Map();
-        
-        // Configuración de eventos
+
+        // Probabilidades de eventos (0-1)
         this.eventProbabilities = {
-            nothing: 0.15,  // Nada interesante
-            item: 0.30,     // Encontrar un objeto
-            enemy: 0.35,    // Encontrar un enemigo
-            quirk: 0.10,    // Descubrir un quirk
-            treasure: 0.10  // Encontrar un tesoro
+            nothing: 0.30,  // Nada (Solo en manual)
+            enemy: 0.40,    // Combate
+            item: 0.15,     // Objeto
+            mining: 0.10,   // Minería
+            fishing: 0.05   // Pesca
+            // Quirk y Treasure deshabilitados por ahora
         };
-        
-        // Zonas de exploración
+
+        // Configuración de zonas (Hardcoded por ahora, idealmente DB/OfficialData)
         this.zones = {
-            'Reino de Akai': {
-                name: 'Reino de Akai',
-                description: 'El reino principal donde comienzan todas las aventuras. Un lugar relativamente seguro con enemigos de bajo nivel.',
+            'Bosque Inicial': {
+                name: 'Mayoi - Bosque Inicial',
+                description: 'Un bosque denso y misterioso que rodea Space Central.',
                 minLevel: 1,
                 maxLevel: 10,
-                difficulty: 'Fácil',
-                image: 'https://i.imgur.com/example1.jpg',
-                enemyTypes: ['slime', 'goblin', 'lobo', 'bandido'],
-                itemTypes: ['común', 'poco común'],
-                unlockRequirements: null // Zona inicial
+                difficulty: 'Normal',
+                image: 'https://media.discordapp.net/attachments/1304192837335613470/1321946864983015484/Bosque_Inicial.png',
+                enemyTypes: ['slime_bosque', 'lobo_sombrio'], // Explicito para Mayoi
+                miningCap: 'Mundano',
+                fishingCap: 'Mundano',
+                distance: 0 // Zona inicial
             },
-            'Bosque Sombrío': {
-                name: 'Bosque Sombrío',
-                description: 'Un bosque antiguo lleno de criaturas misteriosas y tesoros ocultos.',
-                minLevel: 5,
-                maxLevel: 15,
-                difficulty: 'Moderado',
-                image: 'https://i.imgur.com/example2.jpg',
-                enemyTypes: ['lobo', 'oso', 'espíritu', 'druida corrupto'],
-                itemTypes: ['común', 'poco común', 'raro'],
-                unlockRequirements: { level: 5 }
-            },
-            'Montañas Heladas': {
-                name: 'Montañas Heladas',
-                description: 'Cumbres nevadas donde habitan bestias de hielo y antiguos dragones.',
-                minLevel: 10,
-                maxLevel: 20,
-                difficulty: 'Difícil',
-                image: 'https://i.imgur.com/example3.jpg',
-                enemyTypes: ['yeti', 'lobo de hielo', 'golem de hielo', 'dragón menor'],
-                itemTypes: ['poco común', 'raro', 'épico'],
-                unlockRequirements: { level: 10, zonesCompleted: ['Bosque Sombrío'] }
-            },
-            'Desierto de Fuego': {
-                name: 'Desierto de Fuego',
-                description: 'Vastas dunas ardientes donde el calor extremo y las criaturas de fuego ponen a prueba a los aventureros.',
-                minLevel: 15,
-                maxLevel: 25,
-                difficulty: 'Muy Difícil',
-                image: 'https://i.imgur.com/example4.jpg',
-                enemyTypes: ['escorpión de fuego', 'elemental de fuego', 'ifrit', 'fénix corrupto'],
-                itemTypes: ['raro', 'épico'],
-                unlockRequirements: { level: 15, zonesCompleted: ['Montañas Heladas'] }
-            },
-            'Ruinas Ancestrales': {
-                name: 'Ruinas Ancestrales',
-                description: 'Antiguos templos y ciudades en ruinas donde descansan poderosos artefactos y guardianes olvidados.',
-                minLevel: 20,
-                maxLevel: 30,
-                difficulty: 'Extremo',
-                image: 'https://i.imgur.com/example5.jpg',
-                enemyTypes: ['golem de piedra', 'espectro', 'guardián ancestral', 'liche'],
-                itemTypes: ['raro', 'épico', 'legendario'],
-                unlockRequirements: { level: 20, zonesCompleted: ['Desierto de Fuego'] }
-            },
-            'Abismo del Vacío': {
-                name: 'Abismo del Vacío',
-                description: 'El lugar más peligroso conocido, donde las leyes de la realidad se distorsionan y habitan las criaturas más poderosas.',
-                minLevel: 25,
-                maxLevel: 40,
-                difficulty: 'Pesadilla',
-                image: 'https://i.imgur.com/example6.jpg',
-                enemyTypes: ['horror del vacío', 'devorador de realidad', 'señor del abismo', 'avatar del caos'],
-                itemTypes: ['épico', 'legendario', 'mítico'],
-                unlockRequirements: { level: 25, zonesCompleted: ['Ruinas Ancestrales'] }
-            }
+            // ... Otras zonas se pueden añadir aquí o cargar de OfficialData
         };
+        
+        // Mapear nombres de OfficialData a claves internas
+        Object.keys(ENEMIES_BY_ZONE).forEach(key => {
+            const zoneData = ENEMIES_BY_ZONE[key];
+             if (key !== 'bosque_inicial') { // Bosque Inicial ya está arriba con imagen
+                // Parsear nivel
+                let minLevel = 1;
+                let maxLevel = 999;
+                
+                if (zoneData.level_range) {
+                    const parts = zoneData.level_range.split('-');
+                    if (parts.length === 2) {
+                        minLevel = parseInt(parts[0]) || 1;
+                        maxLevel = parseInt(parts[1]) || 999;
+                    } else if (zoneData.level_range.includes('+')) {
+                        minLevel = parseInt(zoneData.level_range) || 1;
+                        maxLevel = 999;
+                    } else if (zoneData.level_range === 'Any') {
+                         // Por defecto 1-999
+                    }
+                }
+
+                this.zones[zoneData.name] = {
+                    name: zoneData.name,
+                    description: `Zona de nivel ${zoneData.level_range}`,
+                    minLevel: minLevel, 
+                    maxLevel: maxLevel,
+                    difficulty: 'Variable',
+                    enemyTypes: Object.keys(zoneData.enemies),
+                    miningCap: 'Refinado',
+                    fishingCap: 'Refinado',
+                    distance: 1000
+                };
+             }
+        });
     }
-    
+
     /**
-     * Inicia una exploración para un jugador
-     * @param {Object} interaction - Interacción de Discord
-     * @param {Object} player - Datos del jugador
-     * @param {string} zoneName - Nombre de la zona a explorar
-     * @returns {Object} Datos de la exploración iniciada
+     * Inicia el proceso de exploración (Selección de Modo)
      */
     async startExploration(interaction, player, zoneName) {
         const userId = player.userId;
-        
-        // Verificar si el jugador ya está explorando
+
+        // 1. Verificar memoria
         if (this.activeExplorations.has(userId)) {
-            throw new Error('Ya estás explorando. Termina tu exploración actual antes de iniciar otra.');
-        }
-        
-        // Verificar si la zona existe
-        if (!this.zones[zoneName]) {
-            throw new Error(`La zona "${zoneName}" no existe.`);
-        }
-        
-        const zone = this.zones[zoneName];
-        
-        // Verificar requisitos de nivel
-        if (player.level < zone.minLevel) {
-            throw new Error(`Necesitas ser nivel ${zone.minLevel} para explorar ${zoneName}.`);
-        }
-        
-        // Verificar si la zona está desbloqueada
-        if (zone.unlockRequirements) {
-            // Verificar nivel requerido
-            if (zone.unlockRequirements.level && player.level < zone.unlockRequirements.level) {
-                throw new Error(`Necesitas ser nivel ${zone.unlockRequirements.level} para desbloquear ${zoneName}.`);
+            const existing = this.activeExplorations.get(userId);
+            if (Date.now() - existing.lastInteraction > 1000 * 60 * 15) { 
+                this.activeExplorations.delete(userId);
+            } else {
+                // Si ya está en memoria, simplemente mostramos el estado actual
+                await this.updateExplorationEmbed(interaction, existing, 'Continuando exploración...');
+                return;
             }
+        }
+
+        // 2. Verificar persistencia (DB)
+        const activeSession = await this.gameManager.playerDB.getActiveExplorationSession(userId);
+        
+        if (activeSession) {
+            // Restaurar sesión desde DB
+            let zone = Object.values(this.zones).find(z => z.name === activeSession.zone_id || z.name.includes(activeSession.zone_id));
+            // Si no encontramos la zona por nombre exacto, intentar mapeo inverso o usar default
+            if (!zone) {
+                // Fallback: buscar por ID similar o usar la primera
+                zone = this.zones['Bosque Inicial']; 
+            }
+
+            const exploration = {
+                id: activeSession.session_id, // Usar ID de la DB
+                userId: userId,
+                player: player,
+                zone: zone,
+                status: 'exploring',
+                mode: activeSession.events_log.find(e => e.type === 'start')?.mode || 'manual',
+                startTime: new Date(activeSession.start_time).getTime(),
+                lastInteraction: Date.now(),
+                stats: {
+                    distance: 0, // Idealmente guardar en events_log o rewards_summary
+                    enemiesDefeated: 0,
+                    itemsFound: 0,
+                    passcoinsFound: 0,
+                    events: activeSession.events_log.map(e => `[Restaurado] ${e.type}`)
+                },
+                currentEvent: null,
+                fleeAttempts: 3
+            };
             
-            // Verificar zonas completadas requeridas
-            if (zone.unlockRequirements.zonesCompleted) {
-                const unlockedZones = player.exploration?.unlockedZones || [];
-                const missingZones = zone.unlockRequirements.zonesCompleted.filter(z => !unlockedZones.includes(z));
-                
-                if (missingZones.length > 0) {
-                    throw new Error(`Necesitas explorar ${missingZones.join(', ')} antes de desbloquear ${zoneName}.`);
-                }
-            }
+            this.activeExplorations.set(userId, exploration);
+            await this.updateExplorationEmbed(interaction, exploration, '🔄 Sesión restaurada. ¡Continúa tu aventura!');
+            return;
         }
-        
-        // Crear datos de exploración
+
+        // 3. Nueva Exploración
+        // Resolver zona (Manejo flexible de nombres)
+        let zone = this.zones[zoneName];
+        if (!zone) {
+            const key = Object.keys(this.zones).find(k => k.toLowerCase().includes(zoneName.toLowerCase()) || zoneName.toLowerCase().includes(k.toLowerCase()));
+            if (key) zone = this.zones[key];
+        }
+
+        if (!zone) throw new Error(`La zona "${zoneName}" no existe.`);
+
+        // Crear sesión en DB
+        const dbSession = await this.gameManager.playerDB.createExplorationSession(userId, zone.name, 'manual'); // Mode se define luego, por defecto manual
+
+        // Crear objeto de exploración
         const exploration = {
-            id: `exploration_${userId}_${Date.now()}`,
+            id: dbSession ? dbSession.session_id : `exp_${userId}_${Date.now()}`,
+            userId: userId,
             player: player,
             zone: zone,
-            events: [],
-            currentEvent: null,
-            status: 'active',
+            status: 'mode_selection', 
+            mode: null, 
             startTime: Date.now(),
-            energy: 3, // Número de eventos que puede explorar
-            discoveries: []
+            lastInteraction: Date.now(),
+            stats: {
+                distance: 0,
+                enemiesDefeated: 0,
+                itemsFound: 0,
+                passcoinsFound: 0,
+                events: [] 
+            },
+            currentEvent: null,
+            fleeAttempts: 3
         };
-        
-        // Registrar la exploración activa
+
         this.activeExplorations.set(userId, exploration);
-        
-        // Crear sesión de juego
-        const sessionId = this.gameManager.startSession(userId, 'exploration', { explorationId: exploration.id });
-        exploration.sessionId = sessionId;
-        
-        // Actualizar zona actual del jugador
-        try {
-            const updatedPlayer = await this.gameManager.getPlayer(userId);
-            updatedPlayer.exploration = updatedPlayer.exploration || {};
-            updatedPlayer.exploration.currentZone = zoneName;
-            
-            // Añadir a zonas desbloqueadas si no está ya
-            updatedPlayer.exploration.unlockedZones = updatedPlayer.exploration.unlockedZones || ['Reino de Akai'];
-            if (!updatedPlayer.exploration.unlockedZones.includes(zoneName)) {
-                updatedPlayer.exploration.unlockedZones.push(zoneName);
-            }
-            
-            await this.gameManager.playerDB.savePlayer(updatedPlayer);
-        } catch (error) {
-            console.error('Error al actualizar zona del jugador:', error);
-        }
-        
-        // Mostrar el embed de exploración inicial
-        await this.showExplorationEmbed(interaction, exploration);
-        
-        return exploration;
-    }
-    
-    /**
-     * Muestra el embed de exploración actualizado
-     * @param {Object} interaction - Interacción de Discord
-     * @param {Object} exploration - Datos de la exploración
-     */
-    async showExplorationEmbed(interaction, exploration) {
-        const { player, zone, events, currentEvent, status, energy } = exploration;
-        
-        // Crear embed
+
+        // Embed de Selección de Modo
         const embed = new EmbedBuilder()
-            .setTitle(`🗺️ Explorando: ${zone.name}`)
-            .setDescription(zone.description)
-            .setColor(COLORS.SYSTEM.EXPLORATION)
+            .setTitle(`🗺️ Exploración: ${zone.name}`)
+            .setDescription(`Has llegado a **${zone.name}**.\n¿Cómo deseas explorar esta zona?`)
+            .setColor(COLORS.EXPLORATION)
             .addFields(
-                { name: 'Dificultad', value: zone.difficulty, inline: true },
-                { name: 'Nivel recomendado', value: `${zone.minLevel}-${zone.maxLevel}`, inline: true },
-                { name: 'Energía restante', value: `${energy}/3`, inline: true }
-            );
-        
-        // Añadir imagen de la zona si existe
-        if (zone.image) {
-            embed.setImage(zone.image);
-        }
-        
-        // Añadir información del evento actual si existe
-        if (currentEvent) {
-            embed.addFields({ name: 'Evento actual', value: currentEvent.description, inline: false });
-            
-            // Añadir detalles específicos según el tipo de evento
-            switch (currentEvent.type) {
-                case 'enemy':
-                    embed.addFields({ name: '⚔️ Enemigo encontrado', value: `Has encontrado un ${currentEvent.data.name} (Nivel ${currentEvent.data.level})`, inline: false });
-                    break;
-                case 'item':
-                    embed.addFields({ name: '🎒 Objeto encontrado', value: `Has encontrado: ${currentEvent.data.name} (${currentEvent.data.rarity})`, inline: false });
-                    break;
-                case 'quirk':
-                    embed.addFields({ name: '✨ Quirk descubierto', value: `Has descubierto un nuevo quirk: ${currentEvent.data.name}`, inline: false });
-                    break;
-                case 'treasure':
-                    embed.addFields({ name: '💰 Tesoro encontrado', value: `Has encontrado un tesoro: ${currentEvent.data.name}`, inline: false });
-                    break;
-                case 'nothing':
-                    // No se añade información adicional para eventos de "nada"
-                    break;
-            }
-        }
-        
-        // Añadir resumen de eventos anteriores
-        if (events.length > 0) {
-            const recentEvents = events.slice(-3).map(e => `• ${e.summary}`).join('\n');
-            embed.addFields({ name: 'Eventos recientes', value: recentEvents, inline: false });
-        }
-        
-        // Crear botones de acción
-        const buttons = [];
-        
-        if (status === 'active') {
-            if (currentEvent) {
-                // Botones específicos según el tipo de evento
-                const actionRow = new ActionRowBuilder();
-                
-                switch (currentEvent.type) {
-                    case 'enemy':
-                        actionRow.addComponents(
-                            new ButtonBuilder()
-                                .setCustomId(`exploration_battle_${exploration.id}`)
-                                .setLabel('Combatir')
-                                .setStyle(ButtonStyle.Danger)
-                                .setEmoji('⚔️'),
-                            new ButtonBuilder()
-                                .setCustomId(`exploration_flee_${exploration.id}`)
-                                .setLabel('Huir')
-                                .setStyle(ButtonStyle.Secondary)
-                                .setEmoji('🏃')
-                        );
-                        break;
-                    case 'item':
-                    case 'quirk':
-                    case 'treasure':
-                    case 'nothing':
-                        actionRow.addComponents(
-                            new ButtonBuilder()
-                                .setCustomId(`exploration_continue_${exploration.id}`)
-                                .setLabel('Continuar')
-                                .setStyle(ButtonStyle.Primary)
-                                .setEmoji('➡️')
-                        );
-                        break;
-                }
-                
-                buttons.push(actionRow);
-            } else if (energy > 0) {
-                // Botón para explorar más
-                const actionRow = new ActionRowBuilder()
-                    .addComponents(
-                        new ButtonBuilder()
-                            .setCustomId(`exploration_explore_${exploration.id}`)
-                            .setLabel('Explorar')
-                            .setStyle(ButtonStyle.Primary)
-                            .setEmoji('🔍'),
-                        new ButtonBuilder()
-                            .setCustomId(`exploration_return_${exploration.id}`)
-                            .setLabel('Regresar')
-                            .setStyle(ButtonStyle.Secondary)
-                            .setEmoji('🏠')
-                    );
-                
-                buttons.push(actionRow);
-            } else {
-                // Sin energía, solo puede regresar
-                const actionRow = new ActionRowBuilder()
-                    .addComponents(
-                        new ButtonBuilder()
-                            .setCustomId(`exploration_return_${exploration.id}`)
-                            .setLabel('Regresar')
-                            .setStyle(ButtonStyle.Secondary)
-                            .setEmoji('🏠')
-                    );
-                
-                buttons.push(actionRow);
-            }
-        } else {
-            // Exploración finalizada
-            const actionRow = new ActionRowBuilder()
-                .addComponents(
-                    new ButtonBuilder()
-                        .setCustomId(`exploration_finish_${exploration.id}`)
-                        .setLabel('Finalizar')
-                        .setStyle(ButtonStyle.Success)
-                        .setEmoji('✅')
-                );
-            
-            buttons.push(actionRow);
-        }
-        
-        // Enviar o actualizar mensaje
+                { name: '🤖 Automático', value: 'Avanza automáticamente hasta encontrar un evento (Enemigo, Recurso).', inline: true },
+                { name: 'uD83DuDD79 Manual', value: 'Avanza paso a paso, explorando cada rincón a tu ritmo.', inline: true }
+            )
+            .setImage(zone.image || null)
+            .setFooter({ text: 'Selecciona un modo para comenzar' });
+
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId(`explore_mode_auto_${exploration.id}`).setLabel('Automático').setStyle(ButtonStyle.Primary).setEmoji('🤖'),
+            new ButtonBuilder().setCustomId(`explore_mode_manual_${exploration.id}`).setLabel('Manual').setStyle(ButtonStyle.Secondary).setEmoji('🕹️'),
+            new ButtonBuilder().setCustomId(`explore_cancel_${exploration.id}`).setLabel('Cancelar').setStyle(ButtonStyle.Danger).setEmoji('✖️')
+        );
+
         if (interaction.replied || interaction.deferred) {
-            await interaction.editReply({ embeds: [embed], components: buttons });
+            await interaction.editReply({ embeds: [embed], components: [row] });
         } else {
-            await interaction.reply({ embeds: [embed], components: buttons });
+            await interaction.reply({ embeds: [embed], components: [row] });
         }
     }
-    
+
     /**
-     * Genera un evento aleatorio para la exploración
-     * @param {Object} exploration - Datos de la exploración
-     * @returns {Object} Evento generado
+     * Maneja las interacciones de botones de exploración
      */
-    generateRandomEvent(exploration) {
-        const { player, zone } = exploration;
+    async handleInteraction(interaction) {
+        const userId = interaction.user.id;
+        const exploration = this.activeExplorations.get(userId);
+
+        if (!exploration) {
+            await interaction.reply({ content: '⚠️ No tienes una exploración activa o ha expirado.', ephemeral: true });
+            return;
+        }
+
+        exploration.lastInteraction = Date.now();
+        const customId = interaction.customId;
+
+        // Verificar ID de exploración para evitar conflictos
+        if (!customId.includes(exploration.id)) {
+            // Si es un ID antiguo de otra sesión, ignorar o avisar
+            // Pero a veces el ID puede venir de un botón genérico, asumimos que si el usuario tiene exploración activa, es esta.
+        }
+
+        try {
+            if (customId.startsWith('explore_mode_auto_')) {
+                exploration.mode = 'auto';
+                exploration.status = 'exploring';
+                await this.runAutoStep(interaction, exploration);
+            } 
+            else if (customId.startsWith('explore_mode_manual_')) {
+                exploration.mode = 'manual';
+                exploration.status = 'exploring';
+                await this.runManualStep(interaction, exploration);
+            }
+            else if (customId.startsWith('explore_cancel_')) {
+                await this.endExploration(interaction, exploration, 'Cancelado por el usuario');
+            }
+            else if (customId.startsWith('explore_continue_')) {
+                // Continuar después de un evento
+                if (exploration.mode === 'auto') await this.runAutoStep(interaction, exploration);
+                else await this.runManualStep(interaction, exploration);
+            }
+            else if (customId.startsWith('explore_flee_')) {
+                await this.handleFlee(interaction, exploration);
+            }
+            else if (customId.startsWith('explore_battle_')) {
+                await this.startBattle(interaction, exploration);
+            }
+            else if (customId.startsWith('explore_history_')) {
+                await this.showHistory(interaction, exploration);
+            }
+            else if (customId.startsWith('explore_bag_')) {
+                // Abrir inventario usando el comando existente
+                const inventoryCommand = this.gameManager.client.commands.get('inventario');
+                if (inventoryCommand) {
+                    // Ejecutar comando de inventario de forma efímera para no romper flujo
+                    await inventoryCommand.execute(interaction, this.gameManager.client, true); // true = ephemeral
+                } else {
+                    await interaction.reply({ content: '❌ Error: Comando de inventario no encontrado.', ephemeral: true });
+                }
+            }
+            else if (customId.startsWith('explore_info_')) {
+                await this.showInfo(interaction, exploration);
+            }
+        } catch (error) {
+            console.error('Error en exploración:', error);
+            if (!interaction.replied) await interaction.reply({ content: '❌ Ocurrió un error en la exploración.', ephemeral: true });
+        }
+    }
+
+    /**
+     * Paso de Exploración Automática
+     * Avanza una distancia aleatoria hasta encontrar un evento significativo.
+     */
+    async runAutoStep(interaction, exploration) {
+        await interaction.deferUpdate();
+
+        // Simular avance
+        const distanceStep = Math.floor(Math.random() * 100) + 50; // 50-150m
+        exploration.stats.distance += distanceStep;
+
+        // Generar evento (Forzar evento en Auto, no "Nothing")
+        const event = this.generateEvent(exploration, true);
+        exploration.currentEvent = event;
+        exploration.stats.events.push(`[${new Date().toLocaleTimeString()}] ${event.summary} (${exploration.stats.distance}m)`);
+
+        // Aplicar recompensas inmediatas (si no es combate)
+        if (event.type !== 'enemy') {
+            await this.applyEventRewards(exploration.player, event);
+        }
+
+        // Mostrar Embed
+        await this.updateExplorationEmbed(interaction, exploration, 
+            `Has avanzado **\`${distanceStep}m\`** automáticamente y te has detenido al encontrar algo.`);
+    }
+
+    /**
+     * Paso de Exploración Manual
+     * Avanza una distancia corta, puede no encontrar nada.
+     */
+    async runManualStep(interaction, exploration) {
+        await interaction.deferUpdate();
+
+        const distanceStep = Math.floor(Math.random() * 20) + 10; // 10-30m
+        exploration.stats.distance += distanceStep;
+
+        // Generar evento (Puede ser "Nothing")
+        const event = this.generateEvent(exploration, false);
+        exploration.currentEvent = event;
         
-        // Determinar tipo de evento basado en probabilidades
-        const eventType = this.getRandomEventType();
-        
-        // Crear evento base
-        const event = {
-            type: eventType,
-            timestamp: Date.now(),
-            data: null,
-            description: '',
-            summary: ''
+        if (event.type !== 'nothing') {
+            exploration.stats.events.push(`[${new Date().toLocaleTimeString()}] ${event.summary} (\`${exploration.stats.distance}m\`)`);
+            if (event.type !== 'enemy') {
+                await this.applyEventRewards(exploration.player, event);
+            }
+        }
+
+        await this.updateExplorationEmbed(interaction, exploration, 
+            `Has avanzado **\`${distanceStep}m\`**.`);
+    }
+
+    /**
+     * Genera un evento aleatorio
+     */
+    generateEvent(exploration, forceEvent = false) {
+        const rand = Math.random();
+        let type = 'nothing';
+        const player = exploration.player;
+
+        // Lógica de desbloqueo de eventos por nivel
+        const canMine = player.level >= 10; 
+        const canFish = player.level >= 10; 
+
+        // Probabilidades base (Ajustadas: Más objetos/nada, menos combate)
+        // Ahora: Nothing (0.3), Item (0.3), Enemy (0.2), Mining (0.1), Fishing (0.1)
+        let probs = { 
+            nothing: 0.3, 
+            item: 0.3, 
+            enemy: 0.2, 
+            mining: 0.1, 
+            fishing: 0.1 
         };
         
-        // Generar detalles según el tipo de evento
-        switch (eventType) {
-            case 'nothing':
-                const nothingEvents = [
-                    'Caminas por un sendero tranquilo sin encontrar nada interesante.',
-                    'Descansas bajo la sombra de un árbol y recuperas algo de energía.',
-                    'Observas el paisaje, pero no hay nada destacable.',
-                    'Encuentras huellas de alguna criatura, pero ya se ha ido.',
-                    'El viento sopla suavemente mientras avanzas sin incidentes.'
-                ];
-                
-                const randomNothingEvent = nothingEvents[Math.floor(Math.random() * nothingEvents.length)];
-                event.description = randomNothingEvent;
-                event.summary = 'No encontraste nada especial';
-                break;
-                
-            case 'enemy':
-                // Obtener un enemigo aleatorio apropiado para la zona y nivel del jugador
-                const enemy = this.gameManager.getRandomEnemy(player.level, zone.name);
-                event.data = enemy;
-                event.description = `¡Has encontrado un ${enemy.name} (Nivel ${enemy.level})! Prepárate para el combate o intenta huir.`;
-                event.summary = `Encontraste un ${enemy.name}`;
-                break;
-                
-            case 'item':
-                // Generar un objeto aleatorio basado en la zona
-                const item = this.generateRandomItem(zone, player.level);
-                event.data = item;
-                event.description = `Has encontrado un objeto: ${item.name} (${item.rarity})\n${item.description}`;
-                event.summary = `Encontraste ${item.name}`;
-                break;
-                
-            case 'quirk':
-                // Generar un quirk aleatorio que el jugador no tenga
-                const quirk = this.generateRandomQuirk(player);
-                event.data = quirk;
-                event.description = `¡Has descubierto un nuevo quirk: ${quirk.name}!\n${quirk.description}`;
-                event.summary = `Descubriste el quirk ${quirk.name}`;
-                break;
-                
-            case 'treasure':
-                // Generar un tesoro aleatorio basado en la zona
-                const treasure = this.generateRandomTreasure(zone, player.level);
-                event.data = treasure;
-                event.description = `¡Has encontrado un tesoro: ${treasure.name}!\n${treasure.description}`;
-                event.summary = `Encontraste un tesoro: ${treasure.name}`;
-                break;
+        // Si no puede minar/pescar, redistribuir probabilidad a 'nothing' o 'item'
+        if (!canMine) {
+            probs.nothing += probs.mining / 2;
+            probs.item += probs.mining / 2;
+            probs.mining = 0;
         }
-        
+        if (!canFish) {
+            probs.nothing += probs.fishing / 2;
+            probs.item += probs.fishing / 2;
+            probs.fishing = 0;
+        }
+
+        // Determinar tipo
+        if (forceEvent) {
+            // Recalcular probabilidades excluyendo 'nothing'
+            const total = probs.enemy + probs.item + probs.mining + probs.fishing;
+            const r = Math.random() * total;
+            let sum = 0;
+            
+            if ((sum += probs.enemy) >= r) type = 'enemy';
+            else if ((sum += probs.item) >= r) type = 'item';
+            else if ((sum += probs.mining) >= r) type = 'mining';
+            else if ((sum += probs.fishing) >= r) type = 'fishing';
+            else type = 'enemy'; // Fallback
+        } else {
+            let sum = 0;
+            for (const [t, p] of Object.entries(probs)) {
+                sum += p;
+                if (rand < sum) {
+                    type = t;
+                    break;
+                }
+            }
+        }
+
+        const event = { type, summary: '', description: '', data: null };
+
+        switch (type) {
+            case 'mining':
+                if (!canMine) { 
+                    event.type = 'nothing';
+                    event.description = "Viste una veta de mineral, pero no tienes el nivel o herramienta para picarla.";
+                    event.summary = "Veta ignorada";
+                    break;
+                }
+                const miningEvent = PassSystem.generateEvent('mining', exploration.zone.miningCap);
+                event.data = miningEvent.drop;
+                const mEmoji = miningEvent.drop.emoji || miningEvent.emoji;
+                event.description = `Encontraste una veta de mineral. ¡Has picado **${miningEvent.drop.amount}x ${miningEvent.drop.name}** ${mEmoji}!`;
+                event.summary = `Minaste ${miningEvent.drop.name}`;
+                break;
+
+            case 'fishing':
+                 if (!canFish) {
+                    event.type = 'nothing';
+                    event.description = "Viste peces saltando, pero no tienes el nivel o herramienta para pescar.";
+                    event.summary = "Peces ignorados";
+                    break;
+                }
+                const fishingEvent = PassSystem.generateEvent('fishing', exploration.zone.fishingCap);
+                event.data = fishingEvent.drop;
+                const fEmoji = fishingEvent.drop.emoji || fishingEvent.emoji;
+                event.description = `Encontraste un banco de peces. ¡Has pescado **${fishingEvent.drop.amount}x ${fishingEvent.drop.name}** ${fEmoji}!`;
+                event.summary = `Pescaste ${fishingEvent.drop.name}`;
+                break;
+            
+            case 'enemy':
+                let enemyData = null;
+                if (exploration.zone.enemyTypes && exploration.zone.enemyTypes.length > 0) {
+                    const typeKey = exploration.zone.enemyTypes[Math.floor(Math.random() * exploration.zone.enemyTypes.length)];
+                    if (exploration.zone.name.includes('Bosque Inicial')) {
+                         enemyData = ENEMIES_BY_ZONE.bosque_inicial.enemies[typeKey];
+                    } else {
+                         enemyData = this.gameManager.getRandomEnemy(exploration.player.level, exploration.zone.name);
+                    }
+                } else {
+                    enemyData = this.gameManager.getRandomEnemy(exploration.player.level, exploration.zone.name);
+                }
+
+                if (!enemyData) enemyData = { name: 'Slime Perdido', level: 1, rarity: 'Mundano', emoji: '💧' };
+                
+                // 1. Determinar Rareza Real (Usando PassSystem para consistencia con cap de zona)
+                // Por defecto, los enemigos pueden tener rareza fija en DB, pero aquí aplicamos la lógica dinámica
+                // si queremos que escale. Si el enemigo ya tiene rareza definida (ej. Boss), la respetamos.
+                // Pero el usuario quiere "escalas de poder", así que vamos a forzar la rareza dinámica para enemigos genéricos.
+                
+                const zoneRarityCap = exploration.zone.enemyRarityCap || 'Refinado'; // Default cap para enemigos
+                const calculatedRarityKey = PassSystem.calculateRarity(zoneRarityCap.toLowerCase());
+                const rarityInfo = RARITIES[calculatedRarityKey];
+
+                // 2. Asignar datos de rareza
+                enemyData.rarity = rarityInfo.name;
+                enemyData.rarityId = calculatedRarityKey;
+                enemyData.emoji = enemyData.emoji || '👾'; // Mantener emoji base del enemigo
+                enemyData.multiplier = rarityInfo.multiplier;
+                enemyData.color = rarityInfo.color;
+
+                // 3. Nivel variable cercano al jugador
+                const variance = Math.floor(Math.random() * 3) - 1; // -1, 0, +1
+                enemyData.level = Math.max(1, player.level + variance);
+
+                // 4. Calcular Stats Reales (Escala de Poder)
+                // Base: HP = Level * 50, Atk = Level * 5
+                const baseHp = enemyData.level * 50;
+                const baseAtk = enemyData.level * 5;
+                
+                // Aplicar Multiplicador de Rareza
+                enemyData.hp = Math.floor(baseHp * enemyData.multiplier);
+                enemyData.maxHp = enemyData.hp;
+                enemyData.attack = Math.floor(baseAtk * enemyData.multiplier);
+                
+                // XP y Coins también escalan
+                enemyData.xpReward = Math.floor((enemyData.level * 10) * enemyData.multiplier);
+                enemyData.coinReward = Math.floor((enemyData.level * 5) * enemyData.multiplier);
+
+                event.data = enemyData;
+                
+                // Formato: EmojiRareza NombreEnemigo EmojiEnemigo | Nvl X
+                event.description = `¡*Un Enemigo ha* **aparecido**!\n\n> ${rarityInfo.emoji} **${enemyData.name}** ${enemyData.emoji} | Nvl \`${enemyData.level}\``;
+                event.summary = `Encontraste ${enemyData.name}`;
+                
+                exploration.fleeAttempts = 3;
+                break;
+            
+            case 'item':
+                // Generar item aleatorio con rareza
+                // Solo items de suelo básicos para zona inicial
+                const genericItems = ['Rama Seca', 'Piedra Común', 'Flor Silvestre', 'Baya Roja'];
+                const itemName = genericItems[Math.floor(Math.random() * genericItems.length)];
+                
+                // Rareza siempre mundano para drops básicos de suelo en zonas bajas
+                const itemRarityKey = 'mundano';
+                const itemRarity = RARITIES[itemRarityKey];
+                
+                const item = { 
+                    name: itemName, 
+                    rarity: itemRarity.name, 
+                    rarityId: itemRarityKey,
+                    type: 'material', 
+                    emoji: '📦', 
+                    rarityEmoji: itemRarity.emoji
+                };
+                
+                event.data = item;
+                event.description = `Encontraste ${item.rarityEmoji} **${item.name}** tirado en el suelo.`;
+                event.summary = `Obtuviste ${item.name}`;
+                break;
+
+            default:
+                event.description = "No encontraste nada interesante, pero el paisaje es bonito.";
+                event.summary = "Nada interesante";
+        }
+
         return event;
     }
-    
-    /**
-     * Determina un tipo de evento aleatorio basado en las probabilidades configuradas
-     * @returns {string} Tipo de evento
-     */
-    getRandomEventType() {
-        const rand = Math.random();
-        let cumulativeProbability = 0;
+
+    async applyEventRewards(player, event) {
+        // Dar PassCoins base por explorar
+        const coins = Math.floor(Math.random() * 5) + 1;
         
-        for (const [eventType, probability] of Object.entries(this.eventProbabilities)) {
-            cumulativeProbability += probability;
-            if (rand < cumulativeProbability) {
-                return eventType;
+        // Actualizar DB de economía
+        await this.gameManager.playerDB.addWalletTransaction(
+            player.userId, 
+            coins, 
+            'earn', 
+            'exploration', 
+            { session_id: this.activeExplorations.get(player.userId).id, reason: 'step_reward' }
+        );
+
+        // Actualizar memoria (player.gold se actualiza via trigger en DB, pero aquí lo hacemos para reactividad inmediata)
+        // Si usamos playerDB.getPlayer de nuevo sería mejor, pero por performance:
+        player.gold = (player.gold || 0) + coins;
+        
+        // Actualizar stats de exploración
+        const exploration = this.activeExplorations.get(player.userId);
+        exploration.stats.passcoinsFound += coins;
+
+        if (event.data) {
+            const item = event.data;
+            // Usar key si existe, sino generar slug simple
+            const itemKey = item.key || item.id || item.name.toLowerCase().replace(/\s+/g, '_');
+            
+            // Añadir item a DB
+            const added = await this.gameManager.playerDB.addItem(player.userId, itemKey, 1);
+            
+            if (added) {
+                exploration.stats.itemsFound++;
+                // Log item found
+                exploration.stats.events.push(`[${new Date().toLocaleTimeString()}] 📦 Obtuviste ${item.name}`);
             }
         }
         
-        // Por defecto, devolver 'nothing'
-        return 'nothing';
+        // Sincronizar sesión de exploración en DB (actualizar rewards)
+        await this.gameManager.playerDB.updateExplorationSession(exploration.id, {
+            rewards_summary: {
+                coins: exploration.stats.passcoinsFound,
+                items_count: exploration.stats.itemsFound,
+                enemies_defeated: exploration.stats.enemiesDefeated,
+                distance: exploration.stats.distance
+            },
+            events_log: exploration.stats.events.map(e => ({ type: 'log', message: e, timestamp: new Date().toISOString() }))
+        });
+        
+        // Guardar jugador (para otras stats no DB como XP si se ganara aquí)
+        await this.gameManager.playerDB.savePlayer(player);
     }
-    
-    /**
-     * Genera un objeto aleatorio basado en la zona y nivel del jugador
-     * @param {Object} zone - Datos de la zona
-     * @param {number} playerLevel - Nivel del jugador
-     * @returns {Object} Objeto generado
-     */
-    generateRandomItem(zone, playerLevel) {
-        // Implementación básica - en una versión completa, se cargarían de una base de datos de objetos
-        const itemTypes = ['poción', 'arma', 'armadura', 'accesorio', 'material'];
-        const rarities = zone.itemTypes || ['común', 'poco común'];
+
+    async updateExplorationEmbed(interaction, exploration, message = '') {
+        const { player, zone, currentEvent, stats } = exploration;
         
-        const randomType = itemTypes[Math.floor(Math.random() * itemTypes.length)];
-        const randomRarity = rarities[Math.floor(Math.random() * rarities.length)];
+        // Datos del jugador para el embed
+        const raceId = player.race?.id || player.race; // Manejar si es objeto o string
+        const classId = player.class?.id || player.class;
+
+        // Importar datos oficiales para emojis correctos
+        const { RACES, BASE_CLASSES } = require('../data/passquirk-official-data');
+
+        // Resolver Raza
+        let raceObj = null;
         
-        // Generar estadísticas basadas en rareza y nivel
-        const statMultiplier = {
-            'común': 1,
-            'poco común': 1.2,
-            'raro': 1.5,
-            'épico': 2,
-            'legendario': 3,
-            'mítico': 5
-        }[randomRarity];
-        
-        const baseValue = playerLevel * 5 * statMultiplier;
-        
-        // Crear objeto según su tipo
-        let item = {
-            id: `item_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-            type: randomType,
-            rarity: randomRarity,
-            level: Math.max(1, Math.floor(playerLevel * 0.8 + Math.random() * playerLevel * 0.4)),
-            value: Math.floor(baseValue)
-        };
-        
-        switch (randomType) {
-            case 'poción':
-                const potionTypes = ['salud', 'maná', 'fuerza', 'defensa', 'velocidad'];
-                const potionType = potionTypes[Math.floor(Math.random() * potionTypes.length)];
-                item.name = `Poción de ${potionType} ${randomRarity}`;
-                item.description = `Restaura o aumenta temporalmente ${potionType}.`;
-                item.effect = { type: potionType, value: Math.floor(baseValue) };
-                break;
-                
-            case 'arma':
-                const weaponTypes = ['espada', 'hacha', 'arco', 'bastón', 'daga'];
-                const weaponType = weaponTypes[Math.floor(Math.random() * weaponTypes.length)];
-                item.name = `${weaponType.charAt(0).toUpperCase() + weaponType.slice(1)} ${randomRarity}`;
-                item.description = `Un${weaponType === 'espada' || weaponType === 'hacha' || weaponType === 'daga' ? 'a' : ''} ${weaponType} de calidad ${randomRarity}.`;
-                item.stats = { attack: Math.floor(baseValue * 0.8) };
-                break;
-                
-            case 'armadura':
-                const armorTypes = ['casco', 'pechera', 'guantes', 'botas', 'escudo'];
-                const armorType = armorTypes[Math.floor(Math.random() * armorTypes.length)];
-                item.name = `${armorType.charAt(0).toUpperCase() + armorType.slice(1)} ${randomRarity}`;
-                item.description = `Un${armorType === 'casco' || armorType === 'escudo' ? '' : 'a'} ${armorType} de calidad ${randomRarity}.`;
-                item.stats = { defense: Math.floor(baseValue * 0.8) };
-                break;
-                
-            case 'accesorio':
-                const accessoryTypes = ['anillo', 'amuleto', 'capa', 'cinturón', 'brazalete'];
-                const accessoryType = accessoryTypes[Math.floor(Math.random() * accessoryTypes.length)];
-                item.name = `${accessoryType.charAt(0).toUpperCase() + accessoryType.slice(1)} ${randomRarity}`;
-                item.description = `Un ${accessoryType} de calidad ${randomRarity}.`;
-                
-                // Los accesorios pueden tener efectos variados
-                const statTypes = ['hp', 'mp', 'attack', 'defense', 'speed'];
-                const statType = statTypes[Math.floor(Math.random() * statTypes.length)];
-                item.stats = { [statType]: Math.floor(baseValue * 0.5) };
-                break;
-                
-            case 'material':
-                const materialTypes = ['mineral', 'gema', 'hierba', 'piel', 'fragmento'];
-                const materialType = materialTypes[Math.floor(Math.random() * materialTypes.length)];
-                item.name = `${materialType.charAt(0).toUpperCase() + materialType.slice(1)} ${randomRarity}`;
-                item.description = `Un material ${randomRarity} usado para fabricación.`;
-                item.craftingValue = Math.floor(baseValue * 0.3);
-                break;
+        // Prioridad 1: Buscar en OfficialData usando ID o Nombre
+        if (raceId) {
+            const normalizedId = typeof raceId === 'string' ? raceId.toLowerCase() : (raceId.name || '').toLowerCase();
+            // Intentar búsqueda exacta o parcial (ej. "humano" -> "HUMANOS")
+            const rKey = Object.keys(RACES).find(k => {
+                const key = k.toLowerCase();
+                return key === normalizedId || key.includes(normalizedId) || normalizedId.includes(key);
+            });
+            if (rKey) raceObj = RACES[rKey];
         }
-        
-        return item;
-    }
-    
-    /**
-     * Genera un quirk aleatorio que el jugador no tenga
-     * @param {Object} player - Datos del jugador
-     * @returns {Object} Quirk generado
-     */
-    generateRandomQuirk(player) {
-        // Obtener lista de quirks que el jugador no tiene
-        const playerQuirks = player.quirks || [];
-        const playerQuirkNames = playerQuirks.map(q => q.name);
-        
-        // Filtrar quirks disponibles (excluyendo PassQuirks principales)
-        const availableQuirks = [];
-        
-        // Añadir quirks de combate
-        const combatQuirks = [
-            { name: 'Golpe Crítico', description: 'Aumenta la probabilidad de golpes críticos en combate.', type: 'combat', bonus: { critChance: 5 } },
-            { name: 'Resistencia Elemental', description: 'Reduce el daño recibido de ataques elementales.', type: 'combat', bonus: { elementalResistance: 10 } },
-            { name: 'Contraataque', description: 'Posibilidad de devolver parte del daño recibido.', type: 'combat', bonus: { counterAttack: 15 } },
-            { name: 'Golpe Rápido', description: 'Posibilidad de realizar un ataque adicional en combate.', type: 'combat', bonus: { extraAttackChance: 8 } },
-            { name: 'Defensa Perfecta', description: 'Posibilidad de bloquear completamente un ataque.', type: 'combat', bonus: { perfectBlockChance: 5 } }
-        ];
-        
-        // Añadir quirks de economía
-        const economyQuirks = [
-            { name: 'Ojo para el Valor', description: 'Aumenta el oro obtenido de la venta de objetos.', type: 'economy', bonus: { sellBonus: 10 } },
-            { name: 'Regateo', description: 'Reduce el costo de compra de objetos en tiendas.', type: 'economy', bonus: { buyDiscount: 8 } },
-            { name: 'Buscador de Tesoros', description: 'Aumenta la probabilidad de encontrar objetos raros.', type: 'economy', bonus: { rareFindChance: 5 } },
-            { name: 'Bolsillos Profundos', description: 'Aumenta la capacidad de inventario.', type: 'economy', bonus: { inventorySlots: 5 } },
-            { name: 'Fortuna del Aventurero', description: 'Aumenta el oro obtenido de enemigos.', type: 'economy', bonus: { goldBonus: 15 } }
-        ];
-        
-        // Añadir quirks de progresión
-        const progressionQuirks = [
-            { name: 'Aprendizaje Rápido', description: 'Aumenta la experiencia obtenida de todas las fuentes.', type: 'progression', bonus: { expBonus: 5 } },
-            { name: 'Adaptabilidad', description: 'Reduce el tiempo de enfriamiento de habilidades.', type: 'progression', bonus: { cooldownReduction: 10 } },
-            { name: 'Vitalidad', description: 'Aumenta la salud máxima.', type: 'progression', bonus: { maxHpBonus: 10 } },
-            { name: 'Concentración', description: 'Aumenta el maná máximo.', type: 'progression', bonus: { maxMpBonus: 10 } },
-            { name: 'Maestría de Atributos', description: 'Pequeño aumento a todos los atributos.', type: 'progression', bonus: { allStats: 3 } }
-        ];
-        
-        // Combinar todos los quirks disponibles
-        availableQuirks.push(...combatQuirks, ...economyQuirks, ...progressionQuirks);
-        
-        // Filtrar quirks que el jugador ya tiene
-        const newQuirks = availableQuirks.filter(quirk => !playerQuirkNames.includes(quirk.name));
-        
-        if (newQuirks.length === 0) {
-            // Si el jugador ya tiene todos los quirks, crear uno genérico
-            return {
-                name: 'Quirk Menor',
-                description: 'Un pequeño aumento a tus capacidades.',
-                type: 'generic',
-                bonus: { allStats: 1 }
-            };
+
+        // Prioridad 2: Usar objeto del jugador (solo si no encontramos oficial)
+        if (!raceObj && typeof player.race === 'object') {
+            raceObj = player.race;
         }
+
+        if (!raceObj) raceObj = { name: 'Humano', emoji: '👤' };
+
+        // Resolver Clase
+        let classObj = null;
         
-        // Seleccionar un quirk aleatorio
-        return newQuirks[Math.floor(Math.random() * newQuirks.length)];
-    }
-    
-    /**
-     * Genera un tesoro aleatorio basado en la zona y nivel del jugador
-     * @param {Object} zone - Datos de la zona
-     * @param {number} playerLevel - Nivel del jugador
-     * @returns {Object} Tesoro generado
-     */
-    generateRandomTreasure(zone, playerLevel) {
-        // Implementación básica - en una versión completa, se cargarían de una base de datos de tesoros
-        const treasureTypes = [
-            { name: 'Cofre pequeño', goldMultiplier: 2, itemCount: 1 },
-            { name: 'Cofre mediano', goldMultiplier: 3, itemCount: 2 },
-            { name: 'Cofre grande', goldMultiplier: 5, itemCount: 3 },
-            { name: 'Alijo oculto', goldMultiplier: 4, itemCount: 2 },
-            { name: 'Tesoro antiguo', goldMultiplier: 7, itemCount: 3 }
-        ];
-        
-        // Seleccionar un tipo de tesoro aleatorio
-        const treasureType = treasureTypes[Math.floor(Math.random() * treasureTypes.length)];
-        
-        // Calcular oro basado en nivel del jugador y multiplicador del tesoro
-        const gold = Math.floor(playerLevel * 10 * treasureType.goldMultiplier * (0.8 + Math.random() * 0.4));
-        
-        // Generar objetos aleatorios
-        const items = [];
-        for (let i = 0; i < treasureType.itemCount; i++) {
-            items.push(this.generateRandomItem(zone, playerLevel));
+        // Prioridad 1: Buscar en OfficialData
+        if (classId) {
+             const normalizedId = typeof classId === 'string' ? classId.toLowerCase() : (classId.name || '').toLowerCase();
+            const cKey = Object.keys(BASE_CLASSES).find(k => k.toLowerCase() === normalizedId);
+            if (cKey) classObj = BASE_CLASSES[cKey];
         }
-        
-        // Crear tesoro
-        const treasure = {
-            name: treasureType.name,
-            description: `Un tesoro que contiene ${gold} de oro y ${treasureType.itemCount} objeto(s).`,
-            gold: gold,
-            items: items
-        };
-        
-        return treasure;
-    }
-    
-    /**
-     * Procesa una acción de exploración
-     * @param {Object} interaction - Interacción de Discord
-     * @param {string} explorationId - ID de la exploración
-     */
-    async processExplore(interaction, explorationId) {
-        const userId = interaction.user.id;
-        const exploration = this.activeExplorations.get(userId);
-        
-        if (!exploration || exploration.id !== explorationId || exploration.status !== 'active') {
-            await interaction.reply({ content: 'Esta exploración ya no está activa.', ephemeral: true });
-            return;
+
+        // Prioridad 2: Objeto jugador
+        if (!classObj && typeof player.class === 'object') {
+            classObj = player.class;
         }
+
+        if (!classObj) classObj = { name: 'Aventurero', emoji: '🗡️' };
+
+        // Fallback de emojis si no están en el objeto
+        // IMPORTANTE: Usar siempre raceObj de OfficialData si es posible para evitar emojis de texto antiguo
+        let raceEmoji = '👤';
         
-        await interaction.deferUpdate();
-        
-        // Verificar energía
-        if (exploration.energy <= 0) {
-            await interaction.followUp({ content: 'No tienes energía suficiente para seguir explorando.', ephemeral: true });
-            return;
+        if (raceObj.emoji && raceObj.emoji.startsWith('<:')) {
+             raceEmoji = raceObj.emoji; // Emoji válido de Discord
+        } else if (raceObj.emoji && !raceObj.emoji.startsWith(':')) {
+             raceEmoji = raceObj.emoji; // Emoji unicode probable
+        } else {
+             // Intentar buscar de nuevo en RACES por nombre si tenemos un emoji roto
+             const cleanName = (raceObj.name || 'Humano').toUpperCase();
+             const { RACES } = require('../data/passquirk-official-data');
+             if (RACES[cleanName]) {
+                 raceEmoji = RACES[cleanName].emoji;
+             }
         }
-        
-        // Generar evento aleatorio
-        const event = this.generateRandomEvent(exploration);
-        
-        // Actualizar exploración
-        exploration.currentEvent = event;
-        exploration.energy--;
-        
-        // Mostrar exploración actualizada
-        await this.showExplorationEmbed(interaction, exploration);
-    }
-    
-    /**
-     * Procesa una acción de batalla durante la exploración
-     * @param {Object} interaction - Interacción de Discord
-     * @param {string} explorationId - ID de la exploración
-     */
-    async processBattle(interaction, explorationId) {
-        const userId = interaction.user.id;
-        const exploration = this.activeExplorations.get(userId);
-        
-        if (!exploration || exploration.id !== explorationId || exploration.status !== 'active') {
-            await interaction.reply({ content: 'Esta exploración ya no está activa.', ephemeral: true });
-            return;
-        }
-        
-        if (!exploration.currentEvent || exploration.currentEvent.type !== 'enemy') {
-            await interaction.reply({ content: 'No hay un enemigo para combatir.', ephemeral: true });
-            return;
-        }
-        
-        await interaction.deferUpdate();
-        
-        // Obtener datos del enemigo
-        const enemy = exploration.currentEvent.data;
-        
-        // Iniciar batalla
-        try {
-            // Verificar si el sistema de combate está disponible
-            if (!this.gameManager.systems.combat) {
-                throw new Error('Sistema de combate no disponible.');
-            }
-            
-            // Obtener datos actualizados del jugador
-            const player = await this.gameManager.getPlayer(userId);
-            
-            // Iniciar batalla
-            await this.gameManager.systems.combat.startBattle(interaction, player, enemy);
-            
-            // Registrar evento en la exploración
-            exploration.events.push(exploration.currentEvent);
-            exploration.currentEvent = null;
-            
-            // Pausar la exploración mientras se combate
-            // La exploración se reanudará cuando termine la batalla
-        } catch (error) {
-            console.error('Error al iniciar batalla:', error);
-            await interaction.followUp({ content: `Error al iniciar batalla: ${error.message}`, ephemeral: true });
-        }
-    }
-    
-    /**
-     * Procesa una acción de huida durante la exploración
-     * @param {Object} interaction - Interacción de Discord
-     * @param {string} explorationId - ID de la exploración
-     */
-    async processFlee(interaction, explorationId) {
-        const userId = interaction.user.id;
-        const exploration = this.activeExplorations.get(userId);
-        
-        if (!exploration || exploration.id !== explorationId || exploration.status !== 'active') {
-            await interaction.reply({ content: 'Esta exploración ya no está activa.', ephemeral: true });
-            return;
-        }
-        
-        await interaction.deferUpdate();
-        
-        // Registrar evento de huida
-        if (exploration.currentEvent) {
-            exploration.currentEvent.summary += ' (Huiste)';
-            exploration.events.push(exploration.currentEvent);
-            exploration.currentEvent = null;
-        }
-        
-        // Mostrar exploración actualizada
-        await this.showExplorationEmbed(interaction, exploration);
-    }
-    
-    /**
-     * Procesa una acción de continuar durante la exploración
-     * @param {Object} interaction - Interacción de Discord
-     * @param {string} explorationId - ID de la exploración
-     */
-    async processContinue(interaction, explorationId) {
-        const userId = interaction.user.id;
-        const exploration = this.activeExplorations.get(userId);
-        
-        if (!exploration || exploration.id !== explorationId || exploration.status !== 'active') {
-            await interaction.reply({ content: 'Esta exploración ya no está activa.', ephemeral: true });
-            return;
-        }
-        
-        await interaction.deferUpdate();
-        
-        // Procesar recompensas del evento actual
-        if (exploration.currentEvent) {
-            const event = exploration.currentEvent;
-            const player = await this.gameManager.getPlayer(userId);
-            
-            switch (event.type) {
-                case 'item':
-                    // Añadir objeto al inventario
-                    const item = event.data;
-                    player.inventory = player.inventory || { items: {}, gold: 0 };
-                    player.inventory.items[item.id] = item;
-                    await this.gameManager.playerDB.savePlayer(player);
-                    break;
-                    
-                case 'quirk':
-                    // Añadir quirk a la lista del jugador
-                    const quirk = event.data;
-                    player.quirks = player.quirks || [];
-                    player.quirks.push(quirk);
-                    await this.gameManager.playerDB.savePlayer(player);
-                    break;
-                    
-                case 'treasure':
-                    // Añadir oro y objetos del tesoro
-                    const treasure = event.data;
-                    player.inventory = player.inventory || { items: {}, gold: 0 };
-                    player.inventory.gold += treasure.gold;
-                    
-                    // Añadir objetos
-                    for (const item of treasure.items) {
-                        player.inventory.items[item.id] = item;
-                    }
-                    
-                    await this.gameManager.playerDB.savePlayer(player);
-                    break;
-            }
-            
-            // Registrar evento
-            exploration.events.push(event);
-            exploration.currentEvent = null;
-        }
-        
-        // Mostrar exploración actualizada
-        await this.showExplorationEmbed(interaction, exploration);
-    }
-    
-    /**
-     * Procesa una acción de regresar durante la exploración
-     * @param {Object} interaction - Interacción de Discord
-     * @param {string} explorationId - ID de la exploración
-     */
-    async processReturn(interaction, explorationId) {
-        const userId = interaction.user.id;
-        const exploration = this.activeExplorations.get(userId);
-        
-        if (!exploration || exploration.id !== explorationId) {
-            await interaction.reply({ content: 'Esta exploración ya no está activa.', ephemeral: true });
-            return;
-        }
-        
-        await interaction.deferUpdate();
-        
-        // Finalizar exploración
-        exploration.status = 'completed';
-        exploration.endTime = Date.now();
-        
-        // Calcular recompensas totales
-        const totalGold = exploration.events
-            .filter(e => e.type === 'treasure')
-            .reduce((sum, e) => sum + e.data.gold, 0);
-        
-        const totalItems = exploration.events
-            .filter(e => e.type === 'item' || e.type === 'treasure')
-            .reduce((count, e) => {
-                if (e.type === 'item') return count + 1;
-                return count + e.data.items.length;
-            }, 0);
-        
-        const totalQuirks = exploration.events
-            .filter(e => e.type === 'quirk')
-            .length;
-        
-        const totalEnemies = exploration.events
-            .filter(e => e.type === 'enemy')
-            .length;
-        
-        // Actualizar estadísticas del jugador
-        try {
-            const player = await this.gameManager.getPlayer(userId);
-            
-            // Actualizar estadísticas de exploración
-            player.exploration = player.exploration || {};
-            player.exploration.total = (player.exploration.total || 0) + 1;
-            
-            // Registrar descubrimientos
-            player.exploration.discoveries = player.exploration.discoveries || [];
-            
-            // Añadir pequeña cantidad de experiencia por explorar
-            const baseExp = 5 * exploration.zone.difficulty.length; // Más difícil = más exp
-            const eventsExp = exploration.events.length * 3;
-            const totalExp = baseExp + eventsExp;
-            
-            player.experience += totalExp;
-            
-            // Verificar si sube de nivel
-            while (player.experience >= player.experienceToNext) {
-                player.experience -= player.experienceToNext;
-                player.level += 1;
-                player.experienceToNext = Math.floor(100 * Math.pow(1.1, player.level));
-            }
-            
-            await this.gameManager.playerDB.savePlayer(player);
-            
-        } catch (error) {
-            console.error('Error al actualizar estadísticas de exploración:', error);
-        }
-        
-        // Crear resumen de exploración
-        const summary = new EmbedBuilder()
-            .setTitle(`🗺️ Exploración completada: ${exploration.zone.name}`)
-            .setDescription(`Has completado tu exploración en ${exploration.zone.name}.`)
-            .setColor(COLORS.SYSTEM.SUCCESS)
+
+        const classEmoji = classObj.emoji || '🗡️';
+        const raceName = raceObj.name || raceId || 'Humano';
+        const className = classObj.name || classId || 'Aventurero';
+
+        const embed = new EmbedBuilder()
+            .setTitle(`🗺️ Explorando: ${zone.name}`)
+            .setColor(currentEvent?.type === 'enemy' ? COLORS.DANGER : COLORS.EXPLORATION)
+            .setDescription(message + '\n\n' + (currentEvent?.description || ''))
+            .setImage(zone.image || null)
             .addFields(
-                { name: 'Eventos totales', value: `${exploration.events.length}`, inline: true },
-                { name: 'Oro obtenido', value: `${totalGold}`, inline: true },
-                { name: 'Objetos encontrados', value: `${totalItems}`, inline: true },
-                { name: 'Quirks descubiertos', value: `${totalQuirks}`, inline: true },
-                { name: 'Enemigos encontrados', value: `${totalEnemies}`, inline: true },
-                { name: 'Experiencia ganada', value: `${baseExp + eventsExp}`, inline: true }
+                { name: '👤 Aventurero', value: `**${player.username}**\n${raceEmoji} ${raceName} | ${classEmoji} ${className} | Nvl \`${player.level}\``, inline: false },
+                { name: '📊 Estadísticas de Sesión', value: `👣 Distancia: \`${stats.distance}m\`\n⚔️ Enemigos: \`${stats.enemiesDefeated}\`\n📦 Items: \`${stats.itemsFound}\`\n${EMOJIS.GOLD} PassCoins: \`${stats.passcoinsFound}\``, inline: false }
             );
+
+        if (currentEvent?.type === 'enemy') {
+            embed.addFields({ name: '⚔️ ¡COMBATE!', value: '¿Qué harás?', inline: false });
+        }
+
+        // Botones
+        const row = new ActionRowBuilder();
+
+        if (currentEvent?.type === 'enemy') {
+            row.addComponents(
+                new ButtonBuilder().setCustomId(`explore_battle_${exploration.id}`).setLabel('Combatir').setStyle(ButtonStyle.Danger).setEmoji('⚔️'),
+                new ButtonBuilder().setCustomId(`explore_flee_${exploration.id}`).setLabel(`Huir (${exploration.fleeAttempts}/3)`).setStyle(ButtonStyle.Secondary).setEmoji('🏃')
+            );
+        } else {
+            // Botones de navegación
+            const label = exploration.mode === 'auto' ? 'Continuar Auto' : 'Avanzar';
+            const emoji = exploration.mode === 'auto' ? '🤖' : '➡️';
+            
+            row.addComponents(
+                new ButtonBuilder().setCustomId(`explore_continue_${exploration.id}`).setLabel(label).setStyle(ButtonStyle.Primary).setEmoji(emoji),
+                new ButtonBuilder().setCustomId(`explore_bag_${exploration.id}`).setLabel('Mochila').setStyle(ButtonStyle.Secondary).setEmoji('🎒'),
+                new ButtonBuilder().setCustomId(`explore_info_${exploration.id}`).setLabel('Info').setStyle(ButtonStyle.Secondary).setEmoji('ℹ️'),
+                new ButtonBuilder().setCustomId(`explore_history_${exploration.id}`).setLabel('Historial').setStyle(ButtonStyle.Secondary).setEmoji('📜'),
+                new ButtonBuilder().setCustomId(`explore_cancel_${exploration.id}`).setLabel('Salir').setStyle(ButtonStyle.Danger).setEmoji('🏠')
+            );
+        }
+
+        await interaction.editReply({ embeds: [embed], components: [row] });
+    }
+
+    async startBattle(interaction, exploration) {
+        // Usar el CombatSystem real si está disponible
+        if (this.gameManager.systems.combat) {
+            const enemyData = exploration.currentEvent.data;
+            if (enemyData) {
+                // Iniciar combate real
+                const battle = await this.gameManager.systems.combat.startBattle(interaction, exploration.player, enemyData);
+                
+                // Vincular batalla a exploración
+                exploration.currentBattleId = battle.id;
+                exploration.status = 'battle';
+                
+                // Configurar callback de fin de batalla para retornar a exploración
+                battle.onEnd = async (i, result) => {
+                    await this.handleBattleEnd(i, exploration, result, battle);
+                };
+                
+                return;
+            }
+        }
+
+        // Fallback a simulación si falla el sistema de combate
+        const enemy = exploration.currentEvent.data;
+        const player = exploration.player;
         
-        // Mostrar resumen
-        await interaction.followUp({ embeds: [summary] });
+        // Simular combate simple (50% + stats)
+        const winChance = 0.5 + ((player.level - enemy.level) * 0.1);
+        const victory = Math.random() < winChance;
         
-        // Mostrar exploración actualizada
-        await this.showExplorationEmbed(interaction, exploration);
-        
-        // Finalizar sesión de juego
-        if (exploration.sessionId) {
-            this.gameManager.endSession(exploration.sessionId);
+        if (victory) {
+            exploration.stats.enemiesDefeated++;
+            const xp = enemy.xpReward || (enemy.level * 10);
+            const coins = enemy.coinReward || (enemy.level * 5);
+            exploration.stats.passcoinsFound += coins;
+            
+            // Guardar progreso
+            player.gold += coins;
+            await this.gameManager.playerDB.addExperience(interaction, player.userId, xp);
+            await this.gameManager.playerDB.savePlayer(player);
+
+            await this.updateExplorationEmbed(interaction, exploration, 
+                `¡Has derrotado al **${enemy.name}**! (Simulado)\nGanaste \`${xp}\` EXP y ${EMOJIS.GOLD} \`${coins}\` PassCoins.`);
+        } else {
+            await this.endExploration(interaction, exploration, `Fuiste derrotado por **${enemy.name}**. (Simulado)`);
         }
     }
-    
-    /**
-     * Procesa una acción de finalizar exploración
-     * @param {Object} interaction - Interacción de Discord
-     * @param {string} explorationId - ID de la exploración
-     */
-    async processFinish(interaction, explorationId) {
-        const userId = interaction.user.id;
+
+    async handleBattleEnd(interaction, exploration, result, battle) {
+        this.gameManager.systems.combat.activeBattles.delete(battle.player.userId);
         
-        // Eliminar la exploración
-        this.activeExplorations.delete(userId);
-        
-        await interaction.update({ content: 'Exploración finalizada.', embeds: [], components: [] });
+        if (result === 'victory') {
+            // Usar recompensas pre-calculadas en el evento si existen
+            // battle.enemy viene de CombatSystem, que se inicializó con enemyData del evento
+            // Necesitamos asegurarnos que CombatSystem preservó los datos o los pasamos de otra forma.
+            // CombatSystem.startBattle usa: name, level, maxHp, attack, emoji.
+            // Es posible que xpReward y coinReward se perdieran si no se guardaron en battle.enemy.
+            
+            // Vamos a recuperar los datos originales del evento para asegurar consistencia
+            const originalEnemyData = exploration.currentEvent.data;
+            
+            const xp = originalEnemyData.xpReward || (battle.enemy.level * 10);
+            const coins = originalEnemyData.coinReward || (battle.enemy.level * 5);
+            
+            exploration.stats.enemiesDefeated++;
+            exploration.stats.passcoinsFound += coins;
+            
+            await this.gameManager.playerDB.addExperience(interaction, battle.player.userId, xp);
+            battle.player.gold += coins;
+            await this.gameManager.playerDB.savePlayer(battle.player);
+
+            // Mostrar victoria y botón para seguir explorando
+            const embed = new EmbedBuilder()
+                .setTitle('🏆 ¡VICTORIA!')
+                .setDescription(`Has derrotado a **${battle.enemy.name}**.\n\n**Recompensas:**\n✨ \`+${xp}\` EXP\n${EMOJIS.GOLD} \`+${coins}\` PassCoins`)
+                .setColor(COLORS.SUCCESS);
+
+            const row = new ActionRowBuilder()
+                .addComponents(
+                    new ButtonBuilder().setCustomId(`explore_continue_${exploration.id}`).setLabel('Continuar Explorando').setStyle(ButtonStyle.Success).setEmoji('🗺️')
+                );
+
+            exploration.status = 'exploring';
+            await interaction.editReply({ embeds: [embed], components: [row] });
+
+        } else if (result === 'fled') {
+             exploration.status = 'exploring';
+             await this.updateExplorationEmbed(interaction, exploration, "Has logrado huir del combate.");
+        } else {
+            // Derrota
+            await this.endExploration(interaction, exploration, `Has sido derrotado por **${battle.enemy.name}**.`);
+        }
     }
-    
-    /**
-     * Maneja la interacción con botones de exploración
-     * @param {Object} interaction - Interacción de botón
-     * @returns {boolean} True si la interacción fue manejada, false en caso contrario
-     */
-    async handleButtonInteraction(interaction) {
-        const customId = interaction.customId;
-        
-        // Verificar si es un botón de exploración
-        if (!customId.startsWith('exploration_')) return false;
-        
-        const [prefix, action, explorationId] = customId.split('_');
-        const userId = interaction.user.id;
-        
-        // Verificar que el usuario tiene una exploración activa
-        const exploration = this.activeExplorations.get(userId);
-        if (!exploration || exploration.id !== explorationId) {
-            await interaction.reply({ content: 'Esta exploración ya no está activa.', ephemeral: true });
-            return true;
+
+    async handleFlee(interaction, exploration) {
+        // Asegurar que existe contador, si no (legacy) poner 3
+        if (typeof exploration.fleeAttempts === 'undefined') exploration.fleeAttempts = 3;
+
+        if (exploration.fleeAttempts > 0) {
+            exploration.fleeAttempts--;
+            
+            // 50% chance
+            const success = Math.random() > 0.5;
+            
+            if (success) {
+                exploration.currentEvent = null;
+                // Recuperar botones normales
+                await interaction.reply({ content: '💨 ¡Escapaste con éxito!', ephemeral: true });
+                await this.updateExplorationEmbed(interaction, exploration, 'Has escapado del peligro.');
+            } else {
+                // Falló huida
+                await interaction.reply({ content: `🚫 ¡No pudiste escapar! Te quedan ${exploration.fleeAttempts} intentos.`, ephemeral: true });
+                // Actualizar embed para reflejar intentos restantes en el botón
+                await this.updateExplorationEmbed(interaction, exploration, `¡El enemigo bloqueó tu huida! (${exploration.fleeAttempts}/3 intentos)`);
+            }
+        } else {
+            await interaction.reply({ content: '🚫 Ya no puedes huir. ¡Debes luchar!', ephemeral: true });
         }
+    }
+
+    async endExploration(interaction, exploration, reason) {
+        this.activeExplorations.delete(exploration.userId);
         
-        // Manejar diferentes acciones
-        switch (action) {
-            case 'explore':
-                await this.processExplore(interaction, explorationId);
-                break;
-            case 'battle':
-                await this.processBattle(interaction, explorationId);
-                break;
-            case 'flee':
-                await this.processFlee(interaction, explorationId);
-                break;
-            case 'continue':
-                await this.processContinue(interaction, explorationId);
-                break;
-            case 'return':
-                await this.processReturn(interaction, explorationId);
-                break;
-            case 'finish':
-                await this.processFinish(interaction, explorationId);
-                break;
-            default:
-                return false;
+        // Actualizar DB
+        await this.gameManager.playerDB.updateExplorationSession(exploration.id, {
+            status: 'completed',
+            end_time: new Date().toISOString(),
+            rewards_summary: {
+                coins: exploration.stats.passcoinsFound,
+                items_count: exploration.stats.itemsFound,
+                enemies_defeated: exploration.stats.enemiesDefeated,
+                distance: exploration.stats.distance,
+                final_reason: reason
+            }
+        });
+
+        const embed = new EmbedBuilder()
+            .setTitle('🗺️ Exploración Finalizada')
+            .setDescription(reason)
+            .addFields(
+                { name: 'Resumen', value: `Distancia: \`${exploration.stats.distance}m\`\nEnemigos: \`${exploration.stats.enemiesDefeated}\`\nItems: \`${exploration.stats.itemsFound}\``, inline: false }
+            )
+            .setColor(COLORS.SYSTEM.INFO);
+            
+        await interaction.editReply({ embeds: [embed], components: [] });
+        
+        // Actualizar estado jugador (limpiar currentZone)
+        const player = exploration.player;
+        if (player.exploration) player.exploration.active = false;
+        await this.gameManager.playerDB.savePlayer(player);
+    }
+
+    async showHistory(interaction, exploration) {
+        const history = exploration.stats.events.slice(-10).join('\n') || 'No hay eventos recientes.';
+        
+        const embed = new EmbedBuilder()
+            .setTitle('📜 Historial de Exploración')
+            .setDescription(history)
+            .setColor(COLORS.EXPLORATION)
+            .setFooter({ text: 'Últimos 10 eventos' });
+
+        const payload = { embeds: [embed], ephemeral: true };
+
+        // Usar reply ephemeral si no se ha respondido, o followUp si ya se diferió
+        if (interaction.deferred || interaction.replied) {
+            await interaction.followUp(payload);
+        } else {
+            await interaction.reply(payload);
         }
-        
-        return true;
+    }
+
+    async showInfo(interaction, exploration) {
+        const embed = new EmbedBuilder()
+            .setTitle(`ℹ️ Información de Zona: ${exploration.zone.name}`)
+            .addFields(
+                { name: 'Dificultad', value: exploration.zone.difficulty, inline: true },
+                { name: 'Niveles', value: `\`${exploration.zone.minLevel}\` - \`${exploration.zone.maxLevel}\``, inline: true },
+                { name: 'Descripción', value: exploration.zone.description || 'Sin descripción.', inline: false }
+            )
+            .setColor(COLORS.SYSTEM.INFO);
+
+        const payload = { embeds: [embed], ephemeral: true };
+
+        if (interaction.deferred || interaction.replied) {
+            await interaction.followUp(payload);
+        } else {
+            await interaction.reply(payload);
+        }
     }
 }
 

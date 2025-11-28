@@ -1,6 +1,7 @@
 // 👺 MODELO ENEMY - Esquema de base de datos para enemigos
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
+const RARITIES = require('../../src/data/rarities');
 
 const Enemy = sequelize.define('Enemy', {
     id: {
@@ -228,6 +229,9 @@ Enemy.prototype.generateInstance = function(playerLevel) {
 };
 
 Enemy.prototype.getRarityColor = function() {
+    const key = this.rarity ? this.rarity.toLowerCase() : 'mundano';
+    if (RARITIES[key]) return RARITIES[key].color;
+
     const rarityColors = {
         'Normal': '#3498db',      // 🔵 Azul
         'Común': '#2ecc71',       // 🟢 Verde
@@ -244,6 +248,9 @@ Enemy.prototype.getRarityColor = function() {
 };
 
 Enemy.prototype.getRarityEmoji = function() {
+    const key = this.rarity ? this.rarity.toLowerCase() : 'mundano';
+    if (RARITIES[key]) return RARITIES[key].emoji;
+
     const rarityEmojis = {
         'Normal': '🔵',
         'Común': '🟢',

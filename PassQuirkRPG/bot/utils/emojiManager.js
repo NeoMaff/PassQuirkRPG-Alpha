@@ -23,6 +23,25 @@ const CUSTOM_EMOJIS = {
     fire: '1441597244372422698',
     firepixel: '1441597246671163423',
     fireblack: '1441597243193823242',
+    heartfirework: '1441597204983840828',
+    passcoin: '1441951548719759511',
+
+    // Mapeos para corregir errores visuales (Usando emojis existentes)
+    star_purple: '1441601117870886994', // Usando purple_moon
+    green_sparkles: '1441601123415752925', // Usando greenrose
+    sparkle_stars: '1441601121205616841', // Usando heartsparkles
+    star_blue: '1441601288081758412', // Usando discord logo (azul)
+    star_red: '1441601130382626837', // Usando redrose
+    star_yellow: '1441601121205616841', // Usando heartsparkles
+    star_generic: '1441601121205616841', // Usando heartsparkles
+    crown_green: '1441601123415752925', // Usando greenrose
+    green_fire: '1441597244372422698', // Usando fire
+    earth_minecraft: '1441601123415752925', // Usando greenrose
+    christmas_gift: '1441601125932335174', // Usando redpresent
+    gg: '1441601685138856869', // Usando megaphone
+    tada: '1441597204983840828', // Usando heartfirework
+    bin: '1441597243193823242', // Usando fireblack
+    red_x: '1441597243193823242', // Usando fireblack
 
     // === NIVELES (Level Badges) ===
     level1: '1441601885831303308',

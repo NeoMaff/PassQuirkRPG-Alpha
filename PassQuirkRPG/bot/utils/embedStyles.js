@@ -1,6 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
 const { formatNumber } = require('./helpers');
 const colors = require('colors');
+const RARITIES = require('../../src/data/rarities');
 
 // Paleta de colores con amarillo como principal según especificaciones
 const COLORS = {
@@ -69,6 +70,12 @@ const createProgressBar = (current, max, size = 10, style = 'default') => {
 };
 
 const getRarityColor = (rarity) => {
+    if (!rarity) return COLORS.COMMON;
+    const key = rarity.toLowerCase();
+    
+    // Check official rarities first
+    if (RARITIES[key]) return RARITIES[key].color;
+
     const rarityMap = {
         'common': COLORS.COMMON,
         'uncommon': COLORS.UNCOMMON,
@@ -77,15 +84,15 @@ const getRarityColor = (rarity) => {
         'legendary': COLORS.LEGENDARY,
         'mythic': COLORS.MYTHIC
     };
-    return rarityMap[rarity?.toLowerCase()] || COLORS.COMMON;
+    return rarityMap[key] || COLORS.COMMON;
 };
 
 const formatCurrency = (amount, type = 'coins') => {
     const currencies = {
-        coins: '💰',
+        coins: '<:PassCoin:1441951548719759511>', // Emoji oficial de PassCoin
         gems: '💎',
         pg: '⚔️',
-        gold: '🪙',
+        gold: '<:PassCoin:1441951548719759511>', // Alias para coins
         tokens: '🎫'
     };
     return `${currencies[type] || '💰'} ${formatNumber(amount)}`;
@@ -420,7 +427,6 @@ class InventoryEmbed extends PassQuirkEmbed {
 class ProfileEmbed extends PassQuirkEmbed {
     constructor(user, stats, options = {}) {
         super();
-        this.setColor(COLORS.PRIMARY);
         this.setAuthor({
             name: `Perfil de ${user.username}`,
             iconURL: user.displayAvatarURL()
@@ -486,11 +492,12 @@ class ProfileEmbed extends PassQuirkEmbed {
             this.addStatsField(gameStatsData, { inline: false });
         }
 
-        // Economía mejorada (Solo mostrar si tiene algo)
-        if ((stats.balance > 0) || (stats.gems > 0) || (stats.pg > 0) || (stats.tokens > 0)) {
+        // Economía mejorada (Solo mostrar PassCoins)
+        if (stats.balance > 0) {
             const economyData = {};
-            if (stats.balance > 0) economyData['Monedas'] = formatCurrency(stats.balance, 'coins');
-            if (stats.gems > 0) economyData['Gemas'] = formatCurrency(stats.gems, 'gems');
+            economyData['PassCoins'] = formatCurrency(stats.balance, 'coins');
+            
+            // Solo si hay otros valores > 0, añadirlos, pero "Gemas" ya no se usa
             if (stats.pg > 0) economyData['PG'] = formatCurrency(stats.pg, 'pg');
             if (stats.tokens > 0) economyData['Tokens'] = formatCurrency(stats.tokens, 'tokens');
 

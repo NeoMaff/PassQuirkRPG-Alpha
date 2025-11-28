@@ -9,8 +9,8 @@
  * - Categorización de objetos
  */
 
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, StringSelectMenuBuilder, ButtonStyle } = require('discord.js');
-const { COLORS, EMOJIS, ANIMATED_EMOJIS } = require('../utils/embedStyles');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
+const { COLORS, EMOJIS } = require('../utils/embedStyles');
 const { OfficialEmbedBuilder } = require('../utils/embedStyles');
 const { OfficialButtonBuilder } = require('../utils/embedStyles');
 const { OfficialSelectMenuBuilder } = require('../utils/embedStyles');
@@ -19,11 +19,11 @@ class InventorySystem {
     constructor(gameManager) {
         this.gameManager = gameManager;
         this.itemData = gameManager.gameData.ITEMS;
-        
+
         // Configuración del inventario
         this.maxItemsPerPage = 5;
         this.defaultSlots = 20;
-        
+
         // Categorías de objetos
         this.categories = {
             all: { name: 'Todos los items', emoji: '🎒' },
@@ -34,54 +34,59 @@ class InventorySystem {
             especial: { name: 'Especiales', emoji: '🌟' }
         };
     }
-    
+
     /**
      * Muestra el inventario del jugador
      */
-    async showInventory(interaction, userId, category = 'all', page = 0) {
+    async showInventory(interaction, userId, category = 'all', page = 0, isEphemeral = false) {
         const player = await this.gameManager.getPlayer(userId);
         if (!player) {
-            await interaction.reply({
+            const payload = {
                 content: '⚠️ No tienes un personaje creado. Usa `/character create` para crear uno.',
                 ephemeral: true
-            });
+            };
+            if (interaction.replied || interaction.deferred) await interaction.followUp(payload);
+            else await interaction.reply(payload);
             return;
         }
+
+        // Cargar inventario desde Supabase (tabla player_items)
+        // El método getInventory del playerDB debe estar implementado para leer de la tabla relacional
+        const inventoryItems = await this.gameManager.playerDB.getInventory(userId);
         
-        // Asegurarse de que el inventario existe
-        player.inventory = player.inventory || { items: {}, equipment: {}, gold: 0 };
-        
+        // Cargar equipamiento (puede seguir en JSON o migrar a tabla si se desea, por ahora asumimos JSON en player.inventory.equipment)
+        const equipment = player.inventory?.equipment || {};
+        const gold = player.gold || 0; // Usar columna gold de players
+
         // Obtener los items del inventario según la categoría
-        const items = this.getItemsByCategory(player.inventory.items, category);
-        
+        const items = await this.getItemsByCategory(inventoryItems, category);
+
         // Calcular páginas
         const totalPages = Math.ceil(items.length / this.maxItemsPerPage);
         const currentPage = Math.min(page, Math.max(0, totalPages - 1));
         const startIndex = currentPage * this.maxItemsPerPage;
         const endIndex = Math.min(startIndex + this.maxItemsPerPage, items.length);
         const displayedItems = items.slice(startIndex, endIndex);
-        
+
         // Crear el embed del inventario
         const embed = new OfficialEmbedBuilder()
             .setOfficialStyle('inventory')
-            .setOfficialTitle(`Inventario de ${player.username}`, EMOJIS.INVENTORY)
-            .setOfficialDescription(`Aquí puedes ver y gestionar tus objetos.\n\n**Categoría:** ${this.categories[category].emoji} ${this.categories[category].name}\n**Oro:** ${EMOJIS.GOLD} ${player.inventory.gold || 0}\n**Espacio:** ${Object.keys(player.inventory.items).length}/${this.getInventoryCapacity(player)} objetos`);
-        
-        // Añadir información de equipamiento
-        this.addEquipmentInfo(embed, player.inventory.equipment);
-        
+            .setOfficialTitle(`Inventario`, EMOJIS.INVENTORY)
+            .setOfficialDescription(`Aquí puedes ver y gestionar tus objetos.\n\n**Categoría:** ${this.categories[category].emoji} ${this.categories[category].name}\n**PassCoins:** ${EMOJIS.GOLD} ${gold.toLocaleString()}\n**Espacio:** ${inventoryItems.length}/${this.getInventoryCapacity(player)} objetos`);
+
         // Añadir items a mostrar
         if (displayedItems.length > 0) {
             for (const itemInfo of displayedItems) {
                 const { itemId, item, quantity } = itemInfo;
-                const isEquipped = this.isItemEquipped(player.inventory.equipment, itemId);
+                const isEquipped = this.isItemEquipped(equipment, itemId);
                 const equipStatus = isEquipped ? ' (Equipado)' : '';
                 
+                // Formato: Rareza primero (solo emoji) + Nombre
+                const rarityEmoji = item.rarityEmoji || '⚪'; 
+                
                 embed.addOfficialField(
-                    `${item.emoji} ${item.name}${equipStatus}`,
+                    `${rarityEmoji} ${item.name}${equipStatus}`,
                     `**Tipo:** ${this.getItemTypeEmoji(item.type)} ${this.capitalizeFirstLetter(item.type)}\n` +
-                    `**Rareza:** ${item.rarity}\n` +
-                    `**Efecto:** ${item.effect}\n` +
                     `**Cantidad:** x${quantity}`,
                     false
                 );
@@ -89,21 +94,21 @@ class InventorySystem {
         } else {
             embed.addOfficialField(
                 '📦 Inventario Vacío',
-                category === 'all' 
+                category === 'all'
                     ? 'No tienes ningún objeto en tu inventario. ¡Explora para encontrar tesoros o visita la tienda!'
                     : `No tienes objetos de tipo "${this.categories[category].name}". Prueba con otra categoría.`,
                 false
             );
         }
-        
+
         // Crear componentes de interacción
         const components = [];
-        
-        // Menú de categorías
+
+        // Menú de categorías (filtrar la categoría actual)
         const categoryMenu = new OfficialSelectMenuBuilder('inventory_category')
-            .addInventoryCategories();
+            .addInventoryCategories(category); // Pasar categoría actual para excluirla
         components.push(new ActionRowBuilder().addComponents(categoryMenu.menu));
-        
+
         // Botones de acción para el inventario
         if (displayedItems.length > 0) {
             const actionButtons = new OfficialButtonBuilder()
@@ -111,7 +116,7 @@ class InventorySystem {
                 .buildRows();
             components.push(...actionButtons);
         }
-        
+
         // Botones de navegación si hay múltiples páginas
         if (totalPages > 1) {
             const navigationButtons = new OfficialButtonBuilder()
@@ -119,38 +124,56 @@ class InventorySystem {
                 .buildRows(3);
             components.push(...navigationButtons);
         }
-        
-        // Botón para volver al perfil
-        const profileButton = new OfficialButtonBuilder()
-            .addOfficialButton('character_profile', 'Volver al Perfil', 'secondary', '👤')
-            .buildRows();
-        components.push(...profileButton);
-        
-        // Responder a la interacción
-        if (interaction.deferred || interaction.replied) {
-            await interaction.editReply({ embeds: [embed], components });
-        } else {
-            await interaction.reply({ embeds: [embed], components });
+
+        // Botón para volver al perfil (solo si no es ephemeral, porque si es ephemeral no tiene sentido volver al perfil general que es público)
+        if (!isEphemeral) {
+            const profileButton = new OfficialButtonBuilder()
+                .addOfficialButton('character_profile', 'Volver al Perfil', 'secondary', '👤')
+                .buildRows();
+            components.push(...profileButton);
         }
-        
+
+        // Responder a la interacción
+        const replyOptions = { embeds: [embed.getEmbed()], components, ephemeral: isEphemeral }; // getEmbed() necesario para OfficialEmbedBuilder
+
+        if (interaction.deferred || interaction.replied) {
+            await interaction.editReply(replyOptions);
+        } else {
+            await interaction.reply(replyOptions);
+        }
+
         return { embed, components };
     }
-    
+
     /**
      * Obtiene los items del inventario según la categoría
+     * @param {Object[]} inventoryItems - Array de {item_key, quantity} desde DB
      */
-    getItemsByCategory(inventoryItems, category) {
+    async getItemsByCategory(inventoryItems, category) {
         const result = [];
+
+        // Cargar datos de items desde DB o caché del GM
+        // Asumimos que GM tiene un caché de items o los cargamos bajo demanda
+        // Para eficiencia, GM debería tener `gameData.ITEMS` poblado desde `public.items` al inicio
         
-        for (const [itemId, quantity] of Object.entries(inventoryItems)) {
-            const item = this.gameManager.gameData.ITEMS[itemId];
-            if (!item) continue; // Skip if item doesn't exist in game data
+        for (const entry of inventoryItems) {
+            const itemId = entry.item_key;
+            const quantity = entry.quantity;
             
+            // Buscar definición del item
+            let item = this.gameManager.gameData.ITEMS[itemId];
+            
+            // Si no está en caché (nuevo item en DB), intentar cargarlo o usar placeholder
+            if (!item) {
+                // TODO: Implementar carga dinámica si falta
+                continue; 
+            }
+
             if (category === 'all' || item.type === category) {
                 result.push({ itemId, item, quantity });
             }
         }
-        
+
         // Ordenar por rareza y nombre
         return result.sort((a, b) => {
             // Primero por tipo
@@ -158,27 +181,26 @@ class InventorySystem {
                 return a.item.type.localeCompare(b.item.type);
             }
             // Luego por rareza (descendente)
-            if (a.item.rarity !== b.item.rarity) {
-                return b.item.rarity.localeCompare(a.item.rarity);
-            }
+            // Asumiendo rarity es string o ID, ajustar comparación
+            // if (a.item.rarity !== b.item.rarity) { ... }
             // Finalmente por nombre
             return a.item.name.localeCompare(b.item.name);
         });
     }
-    
+
     /**
      * Añade información de equipamiento al embed
      */
     addEquipmentInfo(embed, equipment) {
         const equipmentInfo = [];
-        
+
         // Verificar cada slot de equipamiento
         const slots = {
             weapon: { name: 'Arma', emoji: '⚔️' },
             armor: { name: 'Armadura', emoji: '🛡️' },
             accessory: { name: 'Accesorio', emoji: '💍' }
         };
-        
+
         for (const [slot, info] of Object.entries(slots)) {
             const itemId = equipment[slot];
             if (itemId && this.gameManager.gameData.ITEMS[itemId]) {
@@ -188,24 +210,24 @@ class InventorySystem {
                 equipmentInfo.push(`${info.emoji} **${info.name}:** No equipado`);
             }
         }
-        
+
         embed.addOfficialField('Equipamiento', equipmentInfo.join('\n'), false, '🧰');
     }
-    
+
     /**
      * Verifica si un item está equipado
      */
     isItemEquipped(equipment, itemId) {
         return Object.values(equipment).includes(itemId);
     }
-    
+
     /**
      * Obtiene la capacidad del inventario del jugador
      */
     getInventoryCapacity(player) {
         // Capacidad base + bonificaciones
         let capacity = this.defaultSlots;
-        
+
         // Añadir bonificaciones de habilidades, quirks, etc.
         if (player.quirks) {
             for (const quirk of player.quirks) {
@@ -214,10 +236,10 @@ class InventorySystem {
                 }
             }
         }
-        
+
         return capacity;
     }
-    
+
     /**
      * Usa un objeto del inventario
      */
@@ -230,7 +252,7 @@ class InventorySystem {
             });
             return false;
         }
-        
+
         const item = this.gameManager.gameData.ITEMS[itemId];
         if (!item) {
             await interaction.reply({
@@ -239,7 +261,7 @@ class InventorySystem {
             });
             return false;
         }
-        
+
         // Verificar si el objeto es usable
         if (item.type !== 'consumible' && item.type !== 'especial') {
             await interaction.reply({
@@ -248,22 +270,22 @@ class InventorySystem {
             });
             return false;
         }
-        
+
         // Aplicar efectos del objeto
         const result = await this.applyItemEffects(player, item);
-        
+
         // Consumir el objeto
         await this.gameManager.playerDB.useItem(userId, itemId, 1);
-        
+
         // Mostrar resultado
         await interaction.reply({
             content: `✅ Has usado **${item.name}**. ${result.message}`,
             ephemeral: true
         });
-        
+
         return true;
     }
-    
+
     /**
      * Equipa un objeto
      */
@@ -276,7 +298,7 @@ class InventorySystem {
             });
             return false;
         }
-        
+
         const item = this.gameManager.gameData.ITEMS[itemId];
         if (!item) {
             await interaction.reply({
@@ -285,7 +307,7 @@ class InventorySystem {
             });
             return false;
         }
-        
+
         // Determinar el slot según el tipo de item
         let slot;
         switch (item.type) {
@@ -305,19 +327,19 @@ class InventorySystem {
                 });
                 return false;
         }
-        
+
         // Equipar el objeto
         await this.gameManager.playerDB.equipItem(userId, itemId, slot);
-        
+
         // Mostrar resultado
         await interaction.reply({
             content: `✅ Has equipado **${item.name}** en el slot de ${this.getSlotName(slot)}.`,
             ephemeral: true
         });
-        
+
         return true;
     }
-    
+
     /**
      * Vende un objeto
      */
@@ -330,7 +352,7 @@ class InventorySystem {
             });
             return false;
         }
-        
+
         const item = this.gameManager.gameData.ITEMS[itemId];
         if (!item) {
             await interaction.reply({
@@ -339,7 +361,7 @@ class InventorySystem {
             });
             return false;
         }
-        
+
         // Verificar si tiene suficientes unidades
         if (player.inventory.items[itemId] < quantity) {
             await interaction.reply({
@@ -348,7 +370,7 @@ class InventorySystem {
             });
             return false;
         }
-        
+
         // Verificar si el objeto está equipado
         if (this.isItemEquipped(player.inventory.equipment, itemId)) {
             await interaction.reply({
@@ -357,26 +379,26 @@ class InventorySystem {
             });
             return false;
         }
-        
+
         // Calcular precio de venta (50% del valor original)
         const sellPrice = Math.floor((item.price || 0) * 0.5) * quantity;
-        
+
         // Consumir el objeto
         await this.gameManager.playerDB.useItem(userId, itemId, quantity);
-        
+
         // Añadir oro
         player.inventory.gold = (player.inventory.gold || 0) + sellPrice;
         await this.gameManager.playerDB.savePlayer(player);
-        
+
         // Mostrar resultado
         await interaction.reply({
             content: `💰 Has vendido ${quantity}x **${item.name}** por ${sellPrice} de oro.`,
             ephemeral: true
         });
-        
+
         return true;
     }
-    
+
     /**
      * Aplica los efectos de un objeto al jugador
      */
@@ -384,18 +406,18 @@ class InventorySystem {
         // Parsear el efecto del objeto
         const effectText = item.effect || '';
         const result = { success: true, message: '' };
-        
+
         // Efectos comunes
         if (effectText.includes('+') || effectText.includes('-')) {
             // Buscar patrones como "+10 HP", "-5 MP", etc.
             const statEffects = effectText.match(/([+-]\d+)\s+(\w+)/g) || [];
-            
+
             for (const statEffect of statEffects) {
                 const [_, amount, stat] = statEffect.match(/([+-]\d+)\s+(\w+)/) || [];
                 if (!amount || !stat) continue;
-                
+
                 const numAmount = parseInt(amount);
-                
+
                 switch (stat.toUpperCase()) {
                     case 'HP':
                         player.stats.hp = Math.min(player.stats.hp + numAmount, player.stats.maxHp || 100);
@@ -412,26 +434,26 @@ class InventorySystem {
                 }
             }
         }
-        
+
         // Efectos especiales
         if (item.id === 'pergamino_teletransporte') {
             result.message = 'Puedes teletransportarte a cualquier zona desbloqueada.';
             // La lógica de teletransporte se implementaría en el comando específico
         }
-        
+
         // Guardar cambios en el jugador
         await this.gameManager.playerDB.savePlayer(player);
-        
+
         return result;
     }
-    
+
     /**
      * Añade un objeto al inventario del jugador
      */
     async addItem(userId, itemId, quantity = 1) {
         return await this.gameManager.playerDB.addItem(userId, itemId, quantity);
     }
-    
+
     /**
      * Obtiene el emoji para un tipo de objeto
      */
@@ -443,10 +465,10 @@ class InventorySystem {
             accesorio: '💍',
             especial: '🌟'
         };
-        
+
         return typeEmojis[type] || '📦';
     }
-    
+
     /**
      * Obtiene el nombre de un slot de equipamiento
      */
@@ -456,10 +478,10 @@ class InventorySystem {
             armor: 'Armadura',
             accessory: 'Accesorio'
         };
-        
+
         return slotNames[slot] || slot;
     }
-    
+
     /**
      * Capitaliza la primera letra de un string
      */

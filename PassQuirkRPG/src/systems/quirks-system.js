@@ -15,7 +15,7 @@ class QuirksSystem {
     constructor(gameManager) {
         this.gameManager = gameManager;
         this.activeQuirkSessions = new Map();
-        
+
         // Probabilidades de obtención de quirks según rareza
         this.quirkRarityProbabilities = {
             común: 0.50,      // 50%
@@ -24,7 +24,7 @@ class QuirksSystem {
             épico: 0.04,      // 4%
             legendario: 0.01  // 1%
         };
-        
+
         // Límites de quirks por nivel de jugador
         this.quirkLimits = {
             1: 1,   // Nivel 1: 1 quirk
@@ -33,7 +33,7 @@ class QuirksSystem {
             20: 4,  // Nivel 20: 4 quirks
             30: 5   // Nivel 30: 5 quirks
         };
-        
+
         // Costos de mejora de quirks
         this.upgradeCosts = {
             común: 100,
@@ -44,7 +44,7 @@ class QuirksSystem {
             mítico: 5000
         };
     }
-    
+
     /**
      * Obtiene todos los quirks disponibles para una clase específica
      * @param {string} className - Nombre de la clase
@@ -53,7 +53,7 @@ class QuirksSystem {
     getAvailableQuirksForClass(className) {
         const allQuirks = this.gameManager.gameData.QUIRKS || {};
         const classQuirks = [];
-        
+
         for (const [key, quirk] of Object.entries(allQuirks)) {
             // Verificar si el quirk es compatible con la clase específica
             if (quirk.compatibleClasses && quirk.compatibleClasses.includes(className)) {
@@ -63,7 +63,7 @@ class QuirksSystem {
                 });
                 continue;
             }
-            
+
             // Verificar si el quirk pertenece a la clase específica
             if (quirk.class === className) {
                 classQuirks.push({
@@ -72,7 +72,7 @@ class QuirksSystem {
                 });
                 continue;
             }
-            
+
             // Verificar si el quirk es universal (compatible con todas las clases)
             if (quirk.compatibleClasses && quirk.compatibleClasses.includes("🔓 Todas las clases (Universal)")) {
                 classQuirks.push({
@@ -81,10 +81,10 @@ class QuirksSystem {
                 });
             }
         }
-        
+
         return classQuirks;
     }
-    
+
     /**
      * Verifica si un quirk es compatible con el PassQuirk del jugador
      * @param {string} quirkId - ID del quirk
@@ -94,21 +94,21 @@ class QuirksSystem {
     isQuirkCompatibleWithPassQuirk(quirkId, passquirkId) {
         const quirk = this.gameManager.gameData.QUIRKS[quirkId];
         const passquirk = this.gameManager.gameData.PASSQUIRKS[passquirkId];
-        
+
         if (!quirk || !passquirk) return false;
-        
+
         // Verificar compatibilidad de elemento
         if (quirk.element === passquirk.element) return true;
-        
+
         // Verificar compatibilidades especiales
         if (quirk.compatibleElements && quirk.compatibleElements.includes(passquirk.element)) return true;
-        
+
         // Verificar si el PassQuirk es universal (compatible con todas las clases)
         if (passquirk.element === "Universal") return true;
-        
+
         return false;
     }
-    
+
     /**
      * Obtiene el número máximo de quirks que un jugador puede tener según su nivel
      * @param {number} playerLevel - Nivel del jugador
@@ -116,7 +116,7 @@ class QuirksSystem {
      */
     getMaxQuirksForLevel(playerLevel) {
         let maxQuirks = 1; // Por defecto, 1 quirk
-        
+
         for (const [level, limit] of Object.entries(this.quirkLimits)) {
             if (playerLevel >= parseInt(level)) {
                 maxQuirks = limit;
@@ -124,10 +124,10 @@ class QuirksSystem {
                 break;
             }
         }
-        
+
         return maxQuirks;
     }
-    
+
     /**
      * Genera un quirk aleatorio para el jugador
      * @param {Object} player - Datos del jugador
@@ -138,20 +138,20 @@ class QuirksSystem {
         if (!availableQuirks || availableQuirks.length === 0) {
             throw new Error(`No hay quirks disponibles para la clase ${player.class}`);
         }
-        
+
         // Filtrar quirks que el jugador ya tiene
         const playerQuirkIds = player.quirks.map(q => q.id);
         const newQuirks = availableQuirks.filter(q => !playerQuirkIds.includes(q.id));
-        
+
         if (newQuirks.length === 0) {
             throw new Error('Ya tienes todos los quirks disponibles para tu clase');
         }
-        
+
         // Seleccionar rareza según probabilidades
         const rarityRoll = Math.random();
         let selectedRarity = 'común';
         let cumulativeProbability = 0;
-        
+
         for (const [rarity, probability] of Object.entries(this.quirkRarityProbabilities)) {
             cumulativeProbability += probability;
             if (rarityRoll <= cumulativeProbability) {
@@ -159,28 +159,28 @@ class QuirksSystem {
                 break;
             }
         }
-        
+
         // Filtrar por rareza seleccionada, o usar una rareza inferior si no hay disponibles
         const rarityOrder = ['común', 'poco_común', 'raro', 'épico', 'legendario', 'mítico'];
         let rarityIndex = rarityOrder.indexOf(selectedRarity);
         let quirksOfRarity = [];
-        
+
         // Intentar encontrar quirks de la rareza seleccionada o inferior
         while (rarityIndex >= 0 && quirksOfRarity.length === 0) {
             const currentRarity = rarityOrder[rarityIndex];
             quirksOfRarity = newQuirks.filter(q => q.rarity.toLowerCase() === currentRarity);
             rarityIndex--;
         }
-        
+
         // Si no hay quirks disponibles de ninguna rareza, usar cualquiera
         if (quirksOfRarity.length === 0) {
             quirksOfRarity = newQuirks;
         }
-        
+
         // Seleccionar un quirk aleatorio
         const randomIndex = Math.floor(Math.random() * quirksOfRarity.length);
         const selectedQuirk = quirksOfRarity[randomIndex];
-        
+
         // Crear instancia del quirk para el jugador
         // Obtener la primera habilidad del quirk
         let firstAbility = null;
@@ -188,7 +188,7 @@ class QuirksSystem {
             // Si abilities es un array, tomar el primer elemento
             if (Array.isArray(selectedQuirk.abilities)) {
                 firstAbility = selectedQuirk.abilities[0];
-            } 
+            }
             // Si abilities es un objeto con propiedades, tomar la primera propiedad
             else if (typeof selectedQuirk.abilities === 'object') {
                 const abilityKey = Object.keys(selectedQuirk.abilities)[0];
@@ -197,7 +197,7 @@ class QuirksSystem {
                 }
             }
         }
-        
+
         return {
             id: selectedQuirk.id,
             name: selectedQuirk.name,
@@ -212,7 +212,7 @@ class QuirksSystem {
             emoji: selectedQuirk.emoji || '✨'
         };
     }
-    
+
     /**
      * Añade un quirk al jugador
      * @param {string} userId - ID del usuario
@@ -222,21 +222,21 @@ class QuirksSystem {
     async addQuirkToPlayer(userId, quirk) {
         const player = await this.gameManager.getPlayer(userId);
         if (!player) return false;
-        
+
         // Verificar límite de quirks
         const maxQuirks = this.getMaxQuirksForLevel(player.level);
         if (player.quirks.length >= maxQuirks) {
             throw new Error(`Has alcanzado el límite de ${maxQuirks} quirks para tu nivel. Sube de nivel para obtener más espacios.`);
         }
-        
+
         // Añadir quirk
         player.quirks.push(quirk);
-        
+
         // Guardar cambios
         await this.gameManager.playerDB.savePlayer(userId, player);
         return true;
     }
-    
+
     /**
      * Mejora un quirk del jugador
      * @param {string} userId - ID del usuario
@@ -246,24 +246,24 @@ class QuirksSystem {
     async upgradeQuirk(userId, quirkId) {
         const player = await this.gameManager.getPlayer(userId);
         if (!player) throw new Error('Jugador no encontrado');
-        
+
         // Encontrar el quirk
         const quirkIndex = player.quirks.findIndex(q => q.id === quirkId);
         if (quirkIndex === -1) throw new Error('Quirk no encontrado');
-        
+
         const quirk = player.quirks[quirkIndex];
-        
+
         // Variable para almacenar la nueva habilidad desbloqueada
         let newAbility = null;
-        
+
         // Verificar si el quirk puede mejorarse
         const baseQuirk = this.gameManager.gameData.QUIRKS[quirkId];
         if (!baseQuirk) throw new Error('Datos del quirk no encontrados');
-        
+
         // Verificar si hay más habilidades para desbloquear
         let maxAbilities = 0;
         let nextAbility = null;
-        
+
         // Determinar el número máximo de habilidades y la siguiente a desbloquear
         if (baseQuirk.abilities) {
             if (Array.isArray(baseQuirk.abilities)) {
@@ -280,36 +280,36 @@ class QuirksSystem {
                 }
             }
         }
-        
+
         if (quirk.level < maxAbilities) {
             // Calcular costo de mejora
             const upgradeCost = this.upgradeCosts[quirk.rarity.toLowerCase()] || 500;
-            
+
             // Verificar si el jugador tiene suficiente oro
             if (player.inventory.gold < upgradeCost) {
                 throw new Error(`No tienes suficiente oro para mejorar este quirk. Necesitas ${upgradeCost} oro.`);
             }
-            
+
             // Realizar la mejora
             player.inventory.gold -= upgradeCost;
             quirk.level += 1;
             quirk.experience = 0;
             quirk.experienceToNext = quirk.level * 100;
-            
+
             // Desbloquear nueva habilidad si corresponde
             if (nextAbility) {
                 quirk.abilities.push(nextAbility);
-                
+
                 // Guardar la nueva habilidad para devolverla en el resultado
                 newAbility = nextAbility;
             }
-            
+
             // Actualizar el quirk en el jugador
             player.quirks[quirkIndex] = quirk;
-            
+
             // Guardar cambios
             await this.gameManager.playerDB.savePlayer(userId, player);
-            
+
             return {
                 success: true,
                 quirk: quirk,
@@ -320,7 +320,7 @@ class QuirksSystem {
             throw new Error('Este quirk ya ha alcanzado su nivel máximo');
         }
     }
-    
+
     /**
      * Muestra el menú de gestión de quirks
      * @param {Object} interaction - Interacción de Discord
@@ -328,14 +328,14 @@ class QuirksSystem {
     async showQuirksMenu(interaction) {
         const userId = interaction.user.id;
         const player = await this.gameManager.getPlayer(userId);
-        
+
         if (!player) {
             return interaction.reply({
                 content: '⚠️ No tienes un personaje creado. Usa `/character create` primero.',
                 ephemeral: true
             });
         }
-        
+
         // Crear embed principal
         const embed = new EmbedBuilder()
             .setTitle(`✨ Quirks de ${player.username}`)
@@ -350,7 +350,7 @@ class QuirksSystem {
                 { name: 'Clase', value: player.class, inline: true },
                 { name: 'Quirks Activos', value: `${player.quirks.length}/${this.getMaxQuirksForLevel(player.level)}`, inline: true }
             );
-        
+
         // Añadir información de cada quirk
         if (player.quirks.length > 0) {
             player.quirks.forEach(quirk => {
@@ -372,12 +372,12 @@ class QuirksSystem {
                     });
                     abilitiesText = abilityNames.join(', ');
                 }
-                
+
                 embed.addFields({
                     name: `${quirk.emoji} ${quirk.name} (Nivel ${quirk.level})`,
                     value: `${quirk.description}\n` +
-                           `**Elemento:** ${quirk.element} | **Rareza:** ${quirk.rarity}\n` +
-                           `**Habilidades:** ${abilitiesText}`
+                        `**Elemento:** ${quirk.element} | **Rareza:** ${quirk.rarity}\n` +
+                        `**Habilidades:** ${abilitiesText}`
                 });
             });
         } else {
@@ -386,7 +386,7 @@ class QuirksSystem {
                 value: 'Aún no has descubierto ningún quirk. Explora el mundo para encontrarlos.'
             });
         }
-        
+
         // Crear botones de acción
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
@@ -404,7 +404,7 @@ class QuirksSystem {
                 .setLabel('Buscar Quirks')
                 .setStyle(ButtonStyle.Secondary)
         );
-        
+
         // Si hay múltiples quirks, añadir menú de selección
         let selectMenu = null;
         if (player.quirks.length > 1) {
@@ -414,7 +414,7 @@ class QuirksSystem {
                 value: quirk.id,
                 emoji: quirk.emoji
             }));
-            
+
             selectMenu = new ActionRowBuilder().addComponents(
                 new StringSelectMenuBuilder()
                     .setCustomId('quirk_select')
@@ -422,7 +422,7 @@ class QuirksSystem {
                     .addOptions(options)
             );
         }
-        
+
         // Enviar respuesta
         const components = selectMenu ? [row, selectMenu] : [row];
         await interaction.reply({
@@ -430,7 +430,7 @@ class QuirksSystem {
             components: components,
             ephemeral: true
         });
-        
+
         // Iniciar sesión de quirks
         this.activeQuirkSessions.set(userId, {
             userId: userId,
@@ -438,7 +438,7 @@ class QuirksSystem {
             selectedQuirk: player.quirks[0]?.id || null
         });
     }
-    
+
     /**
      * Muestra los detalles de un quirk específico
      * @param {Object} interaction - Interacción de Discord
@@ -447,9 +447,9 @@ class QuirksSystem {
     async showQuirkDetails(interaction, quirkId) {
         const userId = interaction.user.id;
         const player = await this.gameManager.getPlayer(userId);
-        
+
         if (!player) return;
-        
+
         // Encontrar el quirk
         const quirk = player.quirks.find(q => q.id === quirkId);
         if (!quirk) {
@@ -458,7 +458,7 @@ class QuirksSystem {
                 ephemeral: true
             });
         }
-        
+
         // Crear embed de detalles
         const embed = new EmbedBuilder()
             .setTitle(`${quirk.emoji} ${quirk.name} - Nivel ${quirk.level}`)
@@ -470,7 +470,7 @@ class QuirksSystem {
                 { name: 'Descubierto', value: new Date(quirk.discoveredAt).toLocaleDateString(), inline: true },
                 { name: 'Progreso', value: `Experiencia: ${quirk.experience}/${quirk.experienceToNext}`, inline: false }
             );
-        
+
         // Añadir habilidades
         if (quirk.abilities && quirk.abilities.length > 0) {
             const abilitiesText = quirk.abilities.map(ability => {
@@ -481,9 +481,9 @@ class QuirksSystem {
                     const mpCost = ability.mpCost || 'N/A';
                     const damage = ability.damage || 'N/A';
                     const effect = ability.effect || 'Ninguno';
-                    
+
                     return `**${name}** - ${description}\n` +
-                           `Coste: ${mpCost} MP | Daño: ${damage} | Efecto: ${effect}`;
+                        `Coste: ${mpCost} MP | Daño: ${damage} | Efecto: ${effect}`;
                 }
                 // Si la habilidad es un string
                 else if (typeof ability === 'string') {
@@ -492,7 +492,7 @@ class QuirksSystem {
                 // Caso por defecto
                 return 'Habilidad desconocida';
             }).join('\n\n');
-            
+
             embed.addFields({
                 name: '🔮 Habilidades Desbloqueadas',
                 value: abilitiesText
@@ -503,12 +503,12 @@ class QuirksSystem {
                 value: 'Este quirk aún no tiene habilidades desbloqueadas.'
             });
         }
-        
+
         // Verificar si hay más habilidades por desbloquear
         const baseQuirk = this.gameManager.gameData.QUIRKS[quirkId];
         let maxAbilities = 0;
         let nextAbility = null;
-        
+
         // Determinar el número máximo de habilidades y la siguiente a desbloquear
         if (baseQuirk && baseQuirk.abilities) {
             if (Array.isArray(baseQuirk.abilities)) {
@@ -525,25 +525,25 @@ class QuirksSystem {
                 }
             }
         }
-        
+
         if (nextAbility) {
             const upgradeCost = this.upgradeCosts[quirk.rarity.toLowerCase()] || 500;
-            
+
             // Formatear la información de la próxima habilidad
             let nextAbilityName = 'Próxima Habilidad';
             let nextAbilityDescription = 'Descripción no disponible';
-            
+
             if (typeof nextAbility === 'string') {
                 nextAbilityName = nextAbility;
             } else if (nextAbility && typeof nextAbility === 'object') {
                 nextAbilityName = nextAbility.name || 'Próxima Habilidad';
                 nextAbilityDescription = nextAbility.description || 'Descripción no disponible';
             }
-            
+
             embed.addFields({
                 name: '🔒 Próxima Habilidad',
                 value: `**${nextAbilityName}** - ${nextAbilityDescription}\n` +
-                       `Desbloquea al nivel ${quirk.level + 1} (Coste: ${upgradeCost} oro)`
+                    `Desbloquea al nivel ${quirk.level + 1} (Coste: ${upgradeCost} oro)`
             });
         } else {
             embed.addFields({
@@ -551,11 +551,11 @@ class QuirksSystem {
                 value: 'Has desbloqueado todas las habilidades de este quirk.'
             });
         }
-        
+
         // Botones de acción
         // Determinar si el botón de mejora debe estar deshabilitado
         let disableUpgradeButton = true;
-        
+
         if (baseQuirk && baseQuirk.abilities) {
             if (Array.isArray(baseQuirk.abilities)) {
                 disableUpgradeButton = baseQuirk.abilities.length <= quirk.level;
@@ -563,7 +563,7 @@ class QuirksSystem {
                 disableUpgradeButton = Object.keys(baseQuirk.abilities).length <= quirk.level;
             }
         }
-        
+
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId(`quirk_upgrade_${quirkId}`)
@@ -575,7 +575,7 @@ class QuirksSystem {
                 .setLabel('Volver')
                 .setStyle(ButtonStyle.Secondary)
         );
-        
+
         // Enviar respuesta
         await interaction.reply({
             embeds: [embed],
@@ -583,7 +583,7 @@ class QuirksSystem {
             ephemeral: true
         });
     }
-    
+
     /**
      * Obtiene un color basado en el elemento del quirk
      * @param {string} element - Elemento del quirk
@@ -603,10 +603,10 @@ class QuirksSystem {
             'Dragón': '#800080',
             'Vacío': '#36454F'
         };
-        
+
         return elementColors[element] || COLORS.PRIMARY;
     }
-    
+
     /**
      * Maneja la interacción con botones de quirks
      * @param {Object} interaction - Interacción de Discord
@@ -614,7 +614,7 @@ class QuirksSystem {
     async handleQuirkButtonInteraction(interaction) {
         const userId = interaction.user.id;
         const customId = interaction.customId;
-        
+
         // Verificar si hay una sesión activa
         if (!this.activeQuirkSessions.has(userId)) {
             return interaction.reply({
@@ -622,14 +622,14 @@ class QuirksSystem {
                 ephemeral: true
             });
         }
-        
+
         const session = this.activeQuirkSessions.get(userId);
-        
+
         // Manejar diferentes botones
         if (customId === 'quirk_info') {
             // Mostrar detalles del quirk seleccionado
             await this.showQuirkDetails(interaction, session.selectedQuirk);
-        } 
+        }
         else if (customId === 'quirk_back') {
             // Volver al menú principal de quirks
             await this.showQuirksMenu(interaction);
@@ -638,7 +638,7 @@ class QuirksSystem {
             // Mejorar el quirk seleccionado
             try {
                 const result = await this.upgradeQuirk(userId, session.selectedQuirk);
-                
+
                 const embed = new EmbedBuilder()
                     .setTitle(`✨ Quirk Mejorado: ${result.quirk.name}`)
                     .setDescription(
@@ -646,23 +646,23 @@ class QuirksSystem {
                         `Coste: ${result.cost} oro`
                     )
                     .setColor(COLORS.SUCCESS);
-                
+
                 if (result.newAbility) {
                     embed.addFields({
                         name: '🔮 Nueva Habilidad Desbloqueada',
                         value: `**${result.newAbility.name}** - ${result.newAbility.description}\n` +
-                               `Coste: ${result.newAbility.mpCost} MP | Daño: ${result.newAbility.damage || 'N/A'} | Efecto: ${result.newAbility.effect || 'Ninguno'}`
+                            `Coste: ${result.newAbility.mpCost} MP | Daño: ${result.newAbility.damage || 'N/A'} | Efecto: ${result.newAbility.effect || 'Ninguno'}`
                     });
                 }
-                
+
                 await interaction.reply({
                     embeds: [embed],
                     ephemeral: true
                 });
-                
+
                 // Actualizar detalles después de la mejora
                 setTimeout(() => this.showQuirkDetails(interaction, session.selectedQuirk), 3000);
-                
+
             } catch (error) {
                 await interaction.reply({
                     content: `⚠️ ${error.message}`,
@@ -689,7 +689,7 @@ class QuirksSystem {
             const quirkId = customId.replace('quirk_upgrade_', '');
             try {
                 const result = await this.upgradeQuirk(userId, quirkId);
-                
+
                 const embed = new EmbedBuilder()
                     .setTitle(`✨ Quirk Mejorado: ${result.quirk.name}`)
                     .setDescription(
@@ -697,23 +697,23 @@ class QuirksSystem {
                         `Coste: ${result.cost} oro`
                     )
                     .setColor(COLORS.SUCCESS);
-                
+
                 if (result.newAbility) {
                     embed.addFields({
                         name: '🔮 Nueva Habilidad Desbloqueada',
                         value: `**${result.newAbility.name}** - ${result.newAbility.description}\n` +
-                               `Coste: ${result.newAbility.mpCost} MP | Daño: ${result.newAbility.damage || 'N/A'} | Efecto: ${result.newAbility.effect || 'Ninguno'}`
+                            `Coste: ${result.newAbility.mpCost} MP | Daño: ${result.newAbility.damage || 'N/A'} | Efecto: ${result.newAbility.effect || 'Ninguno'}`
                     });
                 }
-                
+
                 await interaction.reply({
                     embeds: [embed],
                     ephemeral: true
                 });
-                
+
                 // Actualizar detalles después de la mejora
                 setTimeout(() => this.showQuirkDetails(interaction, quirkId), 3000);
-                
+
             } catch (error) {
                 await interaction.reply({
                     content: `⚠️ ${error.message}`,
@@ -722,7 +722,7 @@ class QuirksSystem {
             }
         }
     }
-    
+
     /**
      * Maneja la interacción con menús de selección de quirks
      * @param {Object} interaction - Interacción de Discord
@@ -730,7 +730,7 @@ class QuirksSystem {
     async handleQuirkSelectInteraction(interaction) {
         const userId = interaction.user.id;
         const quirkId = interaction.values[0];
-        
+
         // Verificar si hay una sesión activa
         if (!this.activeQuirkSessions.has(userId)) {
             return interaction.reply({
@@ -738,12 +738,12 @@ class QuirksSystem {
                 ephemeral: true
             });
         }
-        
+
         // Actualizar quirk seleccionado
         const session = this.activeQuirkSessions.get(userId);
         session.selectedQuirk = quirkId;
         this.activeQuirkSessions.set(userId, session);
-        
+
         // Mostrar detalles del quirk seleccionado
         await this.showQuirkDetails(interaction, quirkId);
     }
