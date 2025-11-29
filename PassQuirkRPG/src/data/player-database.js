@@ -19,6 +19,7 @@ if (supabaseUrl && supabaseKey) {
 const DEFAULT_PLAYER = {
     userId: '',
     username: '',
+    profileIcon: null, // URL del icono personalizado
     gender: 'undetermined', // 'male', 'female'
     race: null,   // { id, name, bonuses }
     class: null,  // { id, name, stats }
@@ -95,6 +96,27 @@ class PlayerDatabase {
             if (data) {
                 // Combinar datos por si añadimos nuevos campos a DEFAULT_PLAYER
                 const player = { ...DEFAULT_PLAYER, ...data.json_data, userId: data.user_id, username: data.username };
+
+                // Mapear columnas canónicas → objeto en memoria
+                if (data.level !== undefined) player.level = data.level;
+                if (data.class) player.class = data.class;
+                if (data.race) player.race = data.race;
+                if (data.current_zone) {
+                    player.currentZone = data.current_zone;
+                    player.location = data.current_zone;
+                }
+                if (data.stats_json && Object.keys(data.stats_json).length) {
+                    player.stats = { ...player.stats, ...data.stats_json };
+                }
+                // Economía unificada
+                if (!player.inventory) player.inventory = { gold: 0, items: [], equipment: { weapon: null, armor: null, accessory: null } };
+                if (data.gold !== undefined) {
+                    player.inventory.gold = data.gold;
+                    player.gold = data.gold;
+                }
+                // Quirk: garantizar valor visible
+                if (!player.quirk) player.quirk = 'Ninguno';
+
                 this.players[userId] = player;
                 return player;
             }
@@ -128,62 +150,56 @@ class PlayerDatabase {
         const player = await this.getPlayer(userId);
         if (!player) return false;
 
-        const oldLevel = player.level;
-        player.experience += amount;
+        // Usar la propiedad 'xp' (canónica) en lugar de 'experience' para evitar conflictos
+        player.xp = (player.xp || player.experience || 0) + amount;
+        player.experience = player.xp; // Sync legacy field
 
-        // Calcular nuevo nivel
-        // Fórmula simple: 100 * (nivel ^ 1.5)
-        let levelsGained = 0;
-        while (player.experience >= player.nextLevelExp) {
-            player.experience -= player.nextLevelExp;
-            player.level++;
-            player.nextLevelExp = Math.floor(100 * Math.pow(1.5, player.level - 1));
-            levelsGained++;
-            
-            // Mejorar stats al subir nivel (simple +10%)
-            player.stats.hp = Math.floor(player.stats.hp * 1.1);
-            player.stats.maxHp = Math.floor(player.stats.maxHp * 1.1);
-            player.stats.attack = Math.floor(player.stats.attack * 1.1);
+        // Delegar lógica de nivel al sistema de nivel si está disponible en el cliente
+        // Acceder a través de interaction.client o global si es necesario
+        let levelSystem = null;
+        if (interaction && interaction.client && interaction.client.gameManager && interaction.client.gameManager.systems) {
+            levelSystem = interaction.client.gameManager.systems.level;
         }
 
-        if (levelsGained > 0) {
-            // Notificar subida de nivel
-            if (interaction && interaction.channel) {
-                const { EmbedBuilder } = require('discord.js');
-                const levelUpEmbed = new EmbedBuilder()
-                    .setColor('#FFD700')
-                    .setTitle('🎉 ¡SUBIDA DE NIVEL!')
-                    .setDescription(`¡Felicidades **${player.username}**! Has alcanzado el **Nivel ${player.level}**.\n\nTus estadísticas han aumentado.`)
-                    .setFooter({ text: 'Sigue explorando para desbloquear más poder.' });
-                
-                // Usar followUp si es posible para no romper flujo
-                if (interaction.replied || interaction.deferred) {
-                    await interaction.followUp({ embeds: [levelUpEmbed], ephemeral: true });
-                } else {
-                    // Si no, intentar enviar al canal (cuidado con permisos)
-                    // await interaction.channel.send({ content: `<@${userId}>`, embeds: [levelUpEmbed] });
-                }
-            }
-
-            // Chequear desbloqueos (Notificaciones)
-            try {
-                const NotificationSystem = require('../systems/notification-system');
-                const notifier = new NotificationSystem(interaction.client); // Necesitamos client
-                await notifier.checkUnlocks(interaction, player, oldLevel, player.level);
-            } catch (err) {
-                console.error('Error en sistema de notificaciones:', err);
-            }
+        if (levelSystem) {
+            await levelSystem.checkLevelUp(player, interaction);
+        } else {
+            // Fallback básico si no hay sistema cargado (para pruebas unitarias o scripts)
+            await this.savePlayer(player);
         }
-
-        await this.savePlayer(player);
-        return levelsGained > 0;
+        
+        return true;
     }
 
     // Guardar jugador (Async)
+    /**
+     * Mapea nombres de zona a claves de DB válidas
+     */
+    mapZoneToKey(zoneName) {
+        if (!zoneName) return 'space_central'; // Default seguro
+        
+        const normalized = zoneName.toLowerCase().trim();
+        
+        if (normalized.includes('mayoi') || normalized.includes('bosque')) return 'bosque_inicial';
+        if (normalized.includes('space') || normalized.includes('central')) return 'space_central';
+        if (normalized.includes('tutorial')) return 'space_central'; // Tutorial -> Space Central
+        
+        // Si ya es una clave válida (snake_case), devolverla
+        if (normalized.match(/^[a-z0-9_]+$/)) return normalized;
+        
+        return 'space_central'; // Fallback
+    }
+
     async savePlayer(player) {
         this.players[player.userId] = player;
 
         try {
+            // Sincronizar gold antes de guardar
+            // Prioridad: inventory.gold (memoria activa) -> player.gold (root)
+            if (player.inventory && player.inventory.gold !== undefined) {
+                player.gold = player.inventory.gold;
+            }
+
             // Verificar si Supabase está configurado
             if (!supabaseUrl || !supabaseKey) {
                 return true; // Guardado "exitoso" en memoria
@@ -196,16 +212,24 @@ class PlayerDatabase {
             const { error } = await supabase
                 .from('players')
                 .upsert({ 
-                    user_id: cleanPlayer.userId, 
-                    username: cleanPlayer.username, 
+                    user_id: cleanPlayer.userId,
+                    username: cleanPlayer.username,
                     json_data: cleanPlayer,
-                    // Columnas relacionales/visibles para el Dashboard
+                    class: (() => {
+                        const c = cleanPlayer.class;
+                        if (!c || c === 'undefined') return null;
+                        const key = typeof c === 'string' ? c : (c.id || c.key || c.name);
+                        return key ? key.toLowerCase() : null;
+                    })(), // Class keys are lowercase in DB
                     level: cleanPlayer.level || 1,
-                    class: null,
-                    race: null,
-                    current_zone: null,
+                    experience: cleanPlayer.xp || cleanPlayer.experience || 0, // Default 0 to avoid undefined
+                    race: (typeof cleanPlayer.race === 'string' ? cleanPlayer.race : (cleanPlayer.race?.id || cleanPlayer.race?.key || cleanPlayer.race?.name || null))?.toUpperCase(), // Race keys are UPPERCASE in DB (HUMANOS, etc)
+                    current_zone: this.mapZoneToKey(cleanPlayer.currentZone || cleanPlayer.location), 
                     gold: cleanPlayer.inventory ? cleanPlayer.inventory.gold : 0,
-                    updated_at: new Date().toISOString() // Forzar update
+                    stats_json: cleanPlayer.stats || {},
+                    mission_id: cleanPlayer.mission?.id || null,
+                    mission_status: cleanPlayer.mission?.status || null,
+                    updated_at: new Date().toISOString()
                 }, { onConflict: 'user_id' });
 
             if (error) {
@@ -268,7 +292,7 @@ class PlayerDatabase {
         if (!supabase) return [];
         const { data, error } = await supabase
             .from('player_items')
-            .select('item_key, quantity, equipped_slot')
+            .select('item_key, quantity, equipped_slot, item:items!inner(key,name,category,rarity_id)')
             .eq('user_id', userId);
         
         if (error) {
@@ -360,6 +384,24 @@ class PlayerDatabase {
     }
 
     /**
+     * Obtiene el inventario del jugador
+     */
+    async getInventory(userId) {
+        if (!supabase) return [];
+
+        const { data, error } = await supabase
+            .from('player_items')
+            .select('*, item:items(*)') // Join con tabla items para detalles
+            .eq('user_id', userId);
+
+        if (error) {
+            console.error('Error getting inventory:', error);
+            return [];
+        }
+        return data;
+    }
+
+    /**
      * Crea una nueva sesión de exploración
      */
     async createExplorationSession(userId, zoneId, mode = 'manual') {
@@ -438,6 +480,31 @@ class PlayerDatabase {
     }
 
     /**
+     * Añade experiencia al jugador y gestiona la subida de nivel
+     */
+    async addExperience(interaction, userId, amount) {
+        const player = await this.getPlayer(userId);
+        if (!player) return false;
+
+        player.xp = (player.xp || 0) + amount;
+        
+        // Intentar usar LevelSystem para verificar Level Up
+        // Accedemos via interaction.client.gameManager
+        if (interaction && interaction.client && interaction.client.gameManager) {
+             const levelSystem = interaction.client.gameManager.systems.level;
+             if (levelSystem) {
+                 await levelSystem.checkLevelUp(player, interaction);
+             }
+        } else {
+            // Fallback básico si no hay sistema de nivel accesible (solo guardar XP)
+            // Opcional: Implementar lógica simple de nivel aquí si es crítico
+        }
+
+        await this.savePlayer(player);
+        return true;
+    }
+
+    /**
      * Registra una transacción de PassCoins
      */
     async addWalletTransaction(userId, amount, direction, source, metadata = {}) {
@@ -455,6 +522,81 @@ class PlayerDatabase {
 
         if (error) {
             console.error('Error adding wallet transaction:', error);
+            return false;
+        }
+        // Actualizar saldo canónico en players.gold
+        const player = await this.getPlayer(userId);
+        if (player) {
+            const delta = ['earn', 'transfer_in'].includes(direction) ? amount : -amount;
+            player.inventory = player.inventory || { gold: 0 };
+            player.inventory.gold = Math.max(0, (player.inventory.gold || 0) + delta);
+            player.gold = player.inventory.gold;
+            await this.savePlayer(player);
+        }
+        return true;
+    }
+
+    /**
+     * Registra un evento del PassSystem (Minería/Pesca) en DB
+     */
+    async logPassystemEvent(userId, type, zoneKey, rarity, dropItemKey, amount, passcoins) {
+        if (!supabase) return false;
+
+        // Validar inputs contra constraints de DB
+        const validTypes = ['mining', 'fishing'];
+        if (!validTypes.includes(type)) {
+            console.warn(`Intento de loggear tipo inválido en passystem_events: ${type}`);
+            return false;
+        }
+
+        // Asegurar capitalización correcta para rareza (DB check constraint: 'Mundano', 'Refinado'...)
+        // Si viene 'mundano', convertir a 'Mundano'
+        const formattedRarity = rarity.charAt(0).toUpperCase() + rarity.slice(1).toLowerCase();
+
+        const { error } = await supabase
+            .from('passystem_events')
+            .insert({
+                user_id: userId,
+                type: type,
+                zone_key: zoneKey,
+                rarity: formattedRarity,
+                drop_item_key: dropItemKey,
+                amount: amount,
+                passcoins: passcoins
+            });
+
+        if (error) {
+            console.error('Error logging passystem event:', error);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Registra un resultado de combate en la tabla 'combats'
+     */
+    async logCombat(userId, enemy, result, rewards = {}, zoneKey = 'unknown', rounds = 0) {
+        if (!supabase) return false;
+
+        const { error } = await supabase
+            .from('combats')
+            .insert({
+                user_id: userId,
+                // enemy_name: enemy.name, // TODO: Uncomment after running SQL migration
+                // enemy_level: enemy.level,
+                // enemy_rarity: enemy.rarity,
+                result: result, // 'victory', 'defeat', 'fled'
+                rounds: rounds,
+                zone_key: zoneKey,
+                // xp_earned: rewards.xp || 0,
+                // gold_earned: rewards.coins || 0,
+                // items_earned_json: rewards.items || [],
+                timestamp: new Date().toISOString()
+            });
+
+        if (error) {
+            console.error('Error logging combat:', error);
+            // No retornar false para no romper flujo, solo loggear
             return false;
         }
         return true;

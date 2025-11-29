@@ -300,6 +300,26 @@ class ShopSystem {
                 'shop',
                 { item_key: itemKey, quantity, category: categoryKey }
             );
+
+            // Registrar pedido en shop_orders (Opcional, para historial detallado)
+            try {
+                const { createClient } = require('@supabase/supabase-js');
+                if (process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
+                    const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+                    // Insertar sin listing_id obligatorio (ajustar DB si es necesario o usar 0)
+                    // Usamos un try-catch silencioso para no bloquear la compra si falla el log extra
+                    await supabase.from('shop_orders').insert({
+                        user_id: userId,
+                        listing_id: 0, // Placeholder para items estáticos
+                        quantity: quantity,
+                        amount: totalPrice,
+                        status: 'completed',
+                        metadata: { item_key: itemKey, item_name: item.name, category: categoryKey }
+                    });
+                }
+            } catch (e) {
+                console.error('Error registrando shop_order (no crítico):', e);
+            }
             
             // Actualizar memoria para reflejar cambio inmediato
             player.gold -= totalPrice;

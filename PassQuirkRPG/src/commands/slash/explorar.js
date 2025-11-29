@@ -37,12 +37,8 @@ module.exports = {
             return;
         }
 
-        if (explorationSystem.activeExplorations.has(userId)) {
-            // Restaurar sesión activa
-            const exploration = explorationSystem.activeExplorations.get(userId);
-            await explorationSystem.updateExplorationEmbed(interaction, exploration, 'Has vuelto a tu exploración activa.');
-            return; // Asegurar que no continue y cause errores
-        }
+        // REMOVIDO: Auto-resume. Ahora siempre forzamos nueva selección para reiniciar.
+        // if (explorationSystem.activeExplorations.has(userId)) { ... }
 
         // Mostrar selección de continente
         await this.showContinentSelection(interaction);
@@ -64,13 +60,14 @@ module.exports = {
             id.startsWith('explore_bag_') || 
             id.startsWith('explore_info_')) {
             
-            await explorationSystem.handleInteraction(interaction);
+            // FIX: Usar handleButtonInteraction en lugar de handleInteraction que no existe en la clase
+            await explorationSystem.handleButtonInteraction(interaction);
             return;
         }
 
         // --- NAVEGACIÓN DE MENÚS (LOCAL) ---
         if (id === 'explore_continent_select') {
-            await interaction.deferUpdate(); // Defer to prevent interaction fail
+            if (!interaction.deferred && !interaction.replied) await interaction.deferUpdate(); // Defer to prevent interaction fail
             const continent = interaction.values[0];
             // Aquí podríamos filtrar zonas por continente, por ahora asumimos Alacrya
             await this.showZoneSelection(interaction, client, continent);
@@ -82,20 +79,20 @@ module.exports = {
             try {
                 // Iniciar exploración en el sistema
                 // Diferir la respuesta para evitar timeouts o "Unknown interaction" si tarda
-                await interaction.deferUpdate();
+                if (!interaction.deferred && !interaction.replied) await interaction.deferUpdate();
                 await explorationSystem.startExploration(interaction, player, zoneName);
             } catch (error) {
-                if (interaction.deferred) await interaction.followUp({ content: `❌ Error al iniciar exploración: ${error.message}`, ephemeral: true });
+                if (interaction.deferred || interaction.replied) await interaction.followUp({ content: `❌ Error al iniciar exploración: ${error.message}`, ephemeral: true });
                 else await interaction.reply({ content: `❌ Error al iniciar exploración: ${error.message}`, ephemeral: true });
             }
         }
         else if (id === 'explore_back_continent') {
-            await interaction.deferUpdate(); // Defer to prevent interaction fail
+            if (!interaction.deferred && !interaction.replied) await interaction.deferUpdate(); // Defer to prevent interaction fail
             await this.showContinentSelection(interaction);
         }
         else if (id === 'explore_back_hub') {
             // Volver a Space Central (Intentar ejecutar comando)
-            await interaction.deferUpdate(); // Defer before calling other command if it edits reply
+            if (!interaction.deferred && !interaction.replied) await interaction.deferUpdate(); // Defer before calling other command if it edits reply
             const cmd = client.commands.get('spacecentral') || client.commands.get('passquirkrpg');
             if (cmd) await cmd.execute(interaction, client);
             else await interaction.editReply({ content: '❌ Hub no disponible.', embeds: [], components: [] });
@@ -138,16 +135,43 @@ module.exports = {
         const explorationSystem = ensureExplorationSystem(client);
         const availableZones = Object.values(explorationSystem.zones);
 
-        // Filtrar zonas relevantes para el jugador (Nivel)
-        const relevantZones = availableZones.filter(z => z.minLevel <= (player.level || 1) + 5);
+        // Filtrar zonas relevantes para el jugador (Nivel y Raza)
+        const relevantZones = availableZones.filter(z => {
+            // 1. Siempre mostrar zonas iniciales/tutoriales (Mayoi)
+            if (z.key === 'bosque_inicial') return true;
+
+            // 2. Restricción de Raza (Reinos)
+            // Si la zona tiene raza asignada, SOLO mostrar si coincide con la del jugador
+            if (z.race) {
+                const playerRace = (player.race || '').toUpperCase();
+                const zoneRace = z.race.toUpperCase();
+                return playerRace === zoneRace;
+            }
+
+            // 3. Restricción de Nivel (Zonas Genéricas)
+            // Mostrar solo si cumplimos el nivel mínimo (o estamos muy cerca)
+            // El usuario pidió "no nvl max", así que solo filtramos por mínimo.
+            return z.minLevel <= (player.level || 1);
+        });
 
         // Crear opciones de menú
-        const options = relevantZones.map(z => ({
-            label: z.name,
-            value: z.name, // Usamos el nombre como ID por simplicidad en este refactor
-            description: `Nvl ${z.minLevel}-${z.maxLevel} • ${z.difficulty}`,
-            emoji: '📍'
-        }));
+        const options = relevantZones.map(z => {
+            let description = '';
+            if (z.race) {
+                // Reinos: Solo nombre (o algo descriptivo si se desea, pero usuario pidió limpio)
+                description = 'Tu Reino de Raza';
+            } else {
+                // Zonas genéricas: Nvl `min`
+                description = `Nvl \`${z.minLevel}\` • ${z.difficulty}`;
+            }
+
+            return {
+                label: z.name,
+                value: z.name, 
+                description: description,
+                emoji: '📍'
+            };
+        });
 
         if (options.length === 0) {
             await interaction.reply({ content: '⚠️ No hay zonas disponibles.', ephemeral: true });

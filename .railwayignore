@@ -54,4 +54,12 @@ npm-debug.log*
 Thumbs.db
 node_modules
 
-.vercel
+# Ignore heavy assets for deployment
+PassQuirkRPG/Documentación - Juego/
+PassQuirkRPG/documentation/
+PassQuirkRPG/Refe-Diseños/
+PassQuirkRPG/assets_output.json
+PassQuirkRPG/assets_output_debug.json
+PassQuirkRPG/stats_emojis_output.json
+.git/
+.trae/

@@ -47,15 +47,16 @@ const CombatSystem = require('../src/systems/combat-system');
 const ExplorationSystem = require('../src/systems/exploration-system');
 const InventorySystem = require('../src/systems/inventory-system');
 const { ShopSystem } = require('../src/systems/shop-system');
+const LevelSystem = require('../src/systems/level-system');
 
 // Instanciar sistemas
 client.gameManager.systems = {
     user: client.userManager,
     dialogue: client.dialogueManager,
-    // tutorialCompleto: new TutorialCompleto()
     combat: new CombatSystem(client.gameManager),
     exploration: new ExplorationSystem(client.gameManager),
     inventory: new InventorySystem(client.gameManager),
+    level: new LevelSystem(client.gameManager),
     shop: ShopSystem // ShopSystem is static, not instantiated
 };
 
@@ -281,12 +282,33 @@ for (const file of eventFiles) {
             console.log(`📤 Intentando registrar ${commands.length} comandos...`);
 
             const isDev = process.env.NODE_ENV === 'development' && process.env.GUILD_ID;
-            const route = isDev
-                ? Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID)
-                : Routes.applicationCommands(process.env.CLIENT_ID);
+            
+            console.log(`🔧 Modo: ${isDev ? 'DESARROLLO (Guild Commands)' : 'PRODUCCIÓN (Global Commands)'}`);
 
-            await rest.put(route, { body: commands });
-            console.log(`✅ Comandos ${(isDev ? 'de Gremio' : 'Globales')} actualizados (${commands.length}).`);
+            // Estrategia Definitiva de Registro:
+            // 1. Registrar Globalmente SIEMPRE (Es lo más seguro a largo plazo)
+            console.log(`📤 Registrando ${commands.length} comandos Globalmente...`);
+            try {
+                await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: commands });
+                console.log(`✅ Comandos Globales registrados exitosamente.`);
+            } catch (e) {
+                console.error(`❌ Error registrando Globalmente:`, e.message);
+            }
+
+            // 2. Registrar en Servidores Individuales (Para actualización instantánea)
+            const currentGuilds = client.guilds.cache.map(g => g.id);
+            console.log(`📋 Detectados ${currentGuilds.length} servidores activos: ${currentGuilds.join(', ')}`);
+
+            for (const guildId of currentGuilds) {
+                // Registrar en TODOS los servidores detectados para asegurar disponibilidad inmediata
+                console.log(`📤 Registrando en servidor ${guildId}...`);
+                try {
+                    await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, guildId), { body: commands });
+                    console.log(`✅ Comandos de Gremio registrados en ${guildId}`);
+                } catch (e) {
+                    console.error(`❌ Error registrando en ${guildId}:`, e.message);
+                }
+            }
         } catch (error) {
             console.error('❌ Error al registrar comandos en Discord:');
             console.error('Código de error:', error.code);

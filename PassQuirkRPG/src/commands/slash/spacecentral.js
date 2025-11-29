@@ -31,6 +31,7 @@ async function mostrarSpaceCentralUnificado(interaction, client) {
     // Actualizar ubicación
     if (!player.exploration) player.exploration = {};
     player.exploration.currentZone = 'Space Central';
+    player.currentZone = 'Space Central';
     
     // Mark as visited
     if (!player.exploration.visitedSpaceCentral) {
@@ -55,20 +56,21 @@ async function mostrarSpaceCentralUnificado(interaction, client) {
 
         if (player.mission.status === 'active') {
             sabioTitle = "ElSabio: Primera Misión";
-            sabioText = `**ElSabio:** ¡Bienvenido a **Space Central**, **${nombreUsuario}**!\n\n` +
-                `Antes de que te acomodes, hay un problema: **No tienes dinero**.\n` +
-                `Necesitas **50 PassCoins** para alquilar una habitación en el Hotel y asegurar tus pertenencias.\n\n` +
-                `🌲 **Tu Tarea:** Ve a **Explorar** -> **Bosque Inicial** y consigue esas monedas.\n` +
-                `*No vuelvas hasta que tengas suficiente.*`;
+            sabioText = `> \`ElSabio\`: ¡Bienvenido a Space Central, ${nombreUsuario}! *Estamos actualmente en el Continente* \`Alacrya\`\n\n` +
+                `> *Antes de que te acomodes, hay un* **problema**: \`No tienes Dinero\`\n\n` +
+                `\`Misión:\`\n\n` +
+                `> Conseguir 50 ${PATHS.PASSCOIN} para alquilar una habitación.\n\n` +
+                `*Para conseguir passcoins tienes que salir a explorar al bosque cercando \`Mayoi\`*`;
         }
     } 
     // Misión 2: Viaje al Reino
     else if (player.mission.id === 'mision_viaje_reino') {
         if (player.mission.status === 'active') {
             sabioTitle = "ElSabio: El Llamado del Hogar";
-            sabioText = `**ElSabio:** ¡Bien hecho con esas monedas! Ahora tienes un lugar seguro.\n\n` +
-                `Es hora de que visites tu verdadero origen.\n` +
-                `Ve al **Portal de los Reinos** (o usa Explorar) y viaja a tu **Reino Racial**.\n` +
+            sabioText = `> \`ElSabio\`: ¡Bien hecho con esas monedas! Ahora tienes un lugar seguro.\n\n` +
+                `> *Es hora de que visites tu verdadero origen.*\n\n` +
+                `\`Misión:\`\n\n` +
+                `> Ve al **Portal de los Reinos** (o usa Explorar) y viaja a tu **Reino Racial**.\n\n` +
                 `*Allí encontrarás a tus iguales y aprenderás más sobre tu raza.*`;
         } else {
             sabioText = `**ElSabio:** Has cumplido con tus primeros deberes. Ahora el mundo es tuyo para explorar.`;

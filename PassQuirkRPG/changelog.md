@@ -1,45 +1,41 @@
+# Changelog
 
-## [Unreleased] - 2025-11-28
+## [Unreleased] - 2025-11-29
 
-### 🛠️ Herramientas de Desarrollo
-- **Servidor MCP MongoDB**:
-  - Integrado servidor local MCP para MongoDB en la raíz del proyecto.
-  - Creado script `mcp/mongodb-server.js` con herramientas para listar colecciones, buscar, insertar, actualizar y eliminar documentos.
-  - Añadido comando `npm run mcp:mongodb` para ejecutar el servidor.
-  - Generada guía de configuración en `MCP_MONGODB_SETUP.md`.
+### ☁️ Despliegue y Mecánicas (Vercel & Huida)
+- **Despliegue Vercel**:
+  - Configurado `web-interface/server.js` y `vercel.json` para despliegue del **Dashboard Web** en Vercel.
+  - ⚠️ **Nota**: El Bot (proceso principal) requiere un host persistente como Railway.
+- **Mecánica de Huida**:
+  - Implementada recarga progresiva de intentos de huida (`fleeAttempts`).
+  - Cada **5 pasos** de exploración (Auto/Manual) se recupera 1 intento de huida (Max 3).
 
-### 🌟 Sistemas Principales
-- **Sistema de Combate Real**:
-  - Implementado combate por turnos interactivo (`CombatSystem`) reemplazando la simulación simple.
-  - Integración de barras de vida (HP) y registro de batalla en tiempo real.
-  - Lógica de victoria/derrota con recompensas y penalizaciones.
+### 🛠️ Correcciones Técnicas (Interacciones Discord)
+- **Estabilidad en Exploración**:
+  - Solucionados errores `DiscordAPIError[10062]` (Unknown interaction) y `DiscordAPIError[40060]` (Interaction already acknowledged) en los eventos de **Minería** y **Pesca**.
+  - Implementado uso de `deferReply({ ephemeral: true })` inmediato en botones de recolección para evitar timeouts en operaciones de base de datos.
+  - Estandarizado el flujo de respuesta usando `editReply` para mensajes de éxito/error en eventos interactivos.
 
-- **Exploración y Balance**:
-  - **Escalas de Poder Reales**: Ahora los enemigos aplican multiplicadores de rareza a sus estadísticas (HP, Ataque) y recompensas (XP, PassCoins). Un enemigo "Cósmico" es significativamente más fuerte que uno "Mundano".
-  - **Probabilidades Ajustadas**: Reducida frecuencia de combate (0.4 -> 0.2) en favor de eventos de items y minería/pesca.
-  - **Cap de Rareza**: Implementado límite de rareza por zona para evitar enemigos/items de alto nivel en zonas iniciales.
-  - **Minería y Pesca**: Desbloqueo reducido a Nivel 5. Los eventos ahora aparecen visualmente incluso si no tienes la herramienta (mensaje informativo).
+### ⛏️ Exploración y Recolección
+- **Validación de Herramientas**:
+  - Ahora se verifica que el jugador tenga el **Pico Mundano** o la **Caña Mundana** en su inventario antes de permitir picar o pescar.
+  - Mensajes de error claros si falta la herramienta o el nivel (Nivel 5), sin bloquear la exploración.
+  - Añadida información visual en el embed de evento sobre la herramienta requerida.
+- **Experiencia por Recolección**:
+  - Añadida ganancia de **2 XP** por cada item recolectado en exploración (minería/pesca/hallazgos).
+  - Visualización de XP actual añadida al embed de exploración junto al porcentaje de nivel.
+- **Corrección de Errores**:
+  - Solucionado crash al intentar picar/pescar sin datos o herramientas.
 
-- **Economía y Tienda**:
-  - Eliminada moneda "Gemas" y categoría Premium por solicitud del usuario.
-  - Renombrados items básicos para seguir nomenclatura de rareza (ej. "Pico Mundano" -> "Pico Simple").
-  - Integración visual de emojis de rareza en el catálogo.
-  - **PassCoins Oficiales**: Ahora se usa el emoji oficial `<:PassCoin:1441951548719759511>` en todos los mensajes de recompensas, tienda y perfil.
+### ⚔️ Sistema de Combate
+- **Uso de Objetos**:
+  - Implementada funcionalidad completa para el botón "Inventario" en combate.
+  - **Hierbas Medicinales**: Ahora curan **30 HP**.
+  - **Pociones de Salud**: Curan **50 HP**.
+  - **Pociones de Maná**: Restauran **30 MP**.
+  - Los objetos se consumen correctamente del inventario y se registra la acción en el log de batalla.
 
-### 🐛 Correcciones y UI
-- **Perfil (`/perfil`)**:
-  - Corregidos emojis de Raza y Clase que se mostraban incorrectamente.
-  - Renombrado campo "Magia" a "Quirk" (mostrando el nombre de la clase).
-  - Ubicación ahora muestra la zona actual del jugador en lugar de "Tutorial".
-- **Estabilidad**:
-  - Solucionado crash en `/inventario` y `/perfil` causado por descripciones de embed vacías.
-  - Solucionado error `TypeError` al usar métodos de `OfficialEmbedBuilder`.
-  - **Corrección de Botones**: Solucionado error `Unknown interaction` en botones de "Continuar" después de combates.
-- **Datos**:
-  - Actualizado `emojisid.md` con la tabla oficial de rarezas.
-  - Centralizada lógica de rarezas en `src/data/rarities.js`.
-  - **Seguridad DB**: Creadas políticas RLS para `shop_listings`, `passystem_events` y `music_settings` para eliminar advertencias de seguridad.
-
-### 💾 Persistencia
-- **Verificación**: Confirmado que XP, Nivel y PassCoins se guardan correctamente en la base de datos Supabase.
-- **Limpieza**: Eliminados campos obsoletos (`gems`) de la base de datos.
+### 🐛 Correcciones Críticas Previas
+- **Base de Datos (Supabase)**:
+  - ✅ Solucionado error de Foreign Key `players_current_zone_fk`: Se han insertado todas las zonas oficiales en la tabla `zones` para asegurar la integridad referencial.
+  - 🔧 Corregido error `Could not find the 'enemy_name' column` en tabla `combats`.

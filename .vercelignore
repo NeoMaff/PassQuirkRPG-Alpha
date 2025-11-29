@@ -1,0 +1,13 @@
+node_modules
+.git
+.env
+passquirk.db
+PassQuirkRPG/documentation
+PassQuirkRPG/database/data/users.json
+Refe-Diseños
+PassQuirkRPG/assets
+PassQuirkRPG/web-interface
+.vercel
+*.log
+.DS_Store
+documentation

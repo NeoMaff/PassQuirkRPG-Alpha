@@ -37,38 +37,30 @@ module.exports = {
         }
 
         // Delegar al sistema de inventario
-        await inventorySystem.showInventory(interaction, userId, category, 1, isEphemeral);
+        await inventorySystem.showInventory(interaction, userId, category, 0, isEphemeral); // Página 0 inicial
     },
 
     async handleInteraction(interaction, client) {
         const inventorySystem = ensureInventorySystem(client);
-        if (!inventorySystem) {
-            await interaction.reply({ content: '❌ Sistema no disponible.', ephemeral: true });
-            return;
-        }
+        if (!inventorySystem) return;
 
-        // Delegar interacciones de botones/menús si el sistema lo soporta
-        // El sistema de inventario debería manejar sus propios botones si están prefijados correctamente
-        // Pero si no, podemos añadir lógica aquí.
-        // Por ahora, asumimos que el sistema de inventario maneja la lógica o que los botones
-        // llaman a funciones específicas.
-        
-        // Nota: InventorySystem.showInventory genera un embed.
-        // Si el sistema tiene un manejador de interacciones, lo llamamos.
-        if (inventorySystem.handleInteraction) {
-            await inventorySystem.handleInteraction(interaction);
-        } else {
-            // Fallback o lógica específica si es necesario
-            // Por ejemplo, paginación
-            const id = interaction.customId;
-            if (id.startsWith('inv_page_')) {
-                // Handle pagination manually if system doesn't
-                // format: inv_page_<category>_<page>
-                const parts = id.split('_');
-                const category = parts[2];
-                const page = parseInt(parts[3]);
-                await inventorySystem.showInventory(interaction, interaction.user.id, category, page);
-            }
+        const id = interaction.customId;
+
+        // Manejo directo de botones del inventario
+        if (id === 'inventory_category') {
+            const selected = interaction.values[0];
+            await inventorySystem.showInventory(interaction, interaction.user.id, selected, 0);
+        } 
+        else if (id === 'inventory_category_all') {
+            await inventorySystem.showInventory(interaction, interaction.user.id, 'all', 0);
+        }
+        else if (id.startsWith('inventory_page_')) {
+            const page = parseInt(id.split('_')[2]);
+            // Necesitamos saber la categoría actual, pero el botón stateless no la tiene
+            // Asumimos 'all' o intentamos recuperarla del embed si fuera posible (complejo)
+            // Por simplicidad, reiniciamos a 'all' o guardamos estado en DB temporal
+            // TODO: Mejorar persistencia de estado de UI
+            await inventorySystem.showInventory(interaction, interaction.user.id, 'all', page);
         }
     }
 };

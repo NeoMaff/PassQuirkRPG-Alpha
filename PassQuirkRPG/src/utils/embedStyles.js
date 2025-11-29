@@ -288,10 +288,74 @@ class OfficialEmbedBuilder {
     }
 
     /**
-     * Establece la imagen miniatura
+     * Wrapper para setTitle de EmbedBuilder
+     */
+    setTitle(title) {
+        this.embed.setTitle(title);
+        return this;
+    }
+
+    /**
+     * Wrapper para setDescription de EmbedBuilder
+     */
+    setDescription(description) {
+        this.embed.setDescription(description);
+        return this;
+    }
+
+    /**
+     * Wrapper para setThumbnail de EmbedBuilder
      */
     setThumbnail(url) {
         this.embed.setThumbnail(url);
+        return this;
+    }
+
+    /**
+     * Wrapper para setImage de EmbedBuilder
+     */
+    setImage(url) {
+        this.embed.setImage(url);
+        return this;
+    }
+
+    /**
+     * Wrapper para addFields de EmbedBuilder
+     */
+    addFields(...fields) {
+        this.embed.addFields(...fields);
+        return this;
+    }
+
+    /**
+     * Wrapper para setFooter de EmbedBuilder
+     */
+    setFooter(footer) {
+        this.embed.setFooter(footer);
+        return this;
+    }
+
+    /**
+     * Wrapper para setTimestamp de EmbedBuilder
+     */
+    setTimestamp(timestamp) {
+        this.embed.setTimestamp(timestamp);
+        return this;
+    }
+
+    /**
+     * Wrapper para setAuthor de EmbedBuilder
+     */
+    setAuthor(author) {
+        this.embed.setAuthor(author);
+        return this;
+    }
+
+    /**
+     * Wrapper para setColor de EmbedBuilder
+     */
+    setColor(color) {
+        this.embed.setColor(color);
         return this;
     }
 

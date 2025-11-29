@@ -31,7 +31,7 @@ function getContentType(filePath) {
     return MIME_TYPES[ext] || 'application/octet-stream';
 }
 
-const server = http.createServer(async (req, res) => {
+const handler = async (req, res) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
 
     // API Endpoints
@@ -181,8 +181,14 @@ const server = http.createServer(async (req, res) => {
             });
         });
     });
-});
+};
 
-server.listen(PORT, () => {
-    console.log(`Servidor web iniciado en http://localhost:${PORT}`);
-});
+const server = http.createServer(handler);
+
+if (require.main === module) {
+    server.listen(PORT, () => {
+        console.log(`Servidor web iniciado en http://localhost:${PORT}`);
+    });
+}
+
+module.exports = handler;

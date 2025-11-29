@@ -15,19 +15,19 @@ const BASE_URL = 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/pub
 
 const ASSETS = {
     classes: {
-        alma_naciente: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/class_alma_naciente.png',
-        ancestral: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/class_ancestral.png',
-        celestial: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/class_celestial.png',
-        fenix: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/class_fenix.png',
-        nigromante: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/class_nigromante.png',
-        shinobi: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/class_shinobi.png',
-        void: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/class_void.png'
+        alma_naciente: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/classes/alma_naciente.png',
+        ancestral: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/classes/ancestral.png',
+        celestial: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/classes/celestial.png',
+        fenix: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/classes/fenix.png',
+        nigromante: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/classes/nigromante.png',
+        shinobi: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/classes/shinobi.png',
+        void: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/classes/void.png'
     },
     races: {
-        elfos: `${BASE_URL}/race_elfos.png`,
-        enanos: `${BASE_URL}/race_enanos.png`,
-        humanos: `${BASE_URL}/race_humanos.png`,
-        ogros: `${BASE_URL}/race_ogros.png`
+        elfos: `${BASE_URL}/races/elfos.png`,
+        enanos: `${BASE_URL}/races/enanos.png`,
+        humanos: `${BASE_URL}/races/humanos.png`,
+        ogros: `${BASE_URL}/races/ogros.png`
     },
     icons: {
         attack: `${BASE_URL}/id_emoji_attack_basic.png`,
@@ -37,49 +37,49 @@ const ASSETS = {
         races: `${BASE_URL}/id_emoji_races.png`
     },
     stats: {
-        alma_naciente: `${BASE_URL}/stats_base_alma_naciente.png`,
-        ancestral: `${BASE_URL}/stats_base_ancestral.jpeg`,
-        celestial: `${BASE_URL}/stats_base_celestial.jpeg`,
-        fenix: `${BASE_URL}/stats_base_fenix.jpeg`,
-        nigromante: `${BASE_URL}/stats_base_nigromante.jpeg`,
-        shinobi: `${BASE_URL}/stats_base_shinobi.jpeg`,
-        void: `${BASE_URL}/stats_base_void.jpeg`
+        alma_naciente: `${BASE_URL}/stats/alma_naciente.png`,
+        ancestral: `${BASE_URL}/stats/ancestral.jpeg`,
+        celestial: `${BASE_URL}/stats/celestial.jpeg`,
+        fenix: `${BASE_URL}/stats/fenix.jpeg`,
+        nigromante: `${BASE_URL}/stats/nigromante.jpeg`,
+        shinobi: `${BASE_URL}/stats/shinobi.jpeg`,
+        void: `${BASE_URL}/stats/void.jpeg`
     },
     powers: {
         celestial: {
-            basic: `${BASE_URL}/power_celestial_basic.png`,
-            power: `${BASE_URL}/power_celestial_power.png`,
-            special: `${BASE_URL}/power_celestial_special.png`
+            basic: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/skills/celestial/basic.png',
+            power: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/skills/celestial/power.png',
+            special: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/skills/celestial/special.png'
         },
         fenix: {
-            basic: `${BASE_URL}/power_fenix_basic.png`,
-            power: `${BASE_URL}/power_fenix_power.png`,
-            special: `${BASE_URL}/power_fenix_special.png`
+            basic: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/skills/fenix/basic.png',
+            power: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/skills/fenix/power.png',
+            special: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/skills/fenix/special.png'
         },
         void: {
-            basic: `${BASE_URL}/power_void_basic.png`,
-            power: `${BASE_URL}/power_void_power.png`,
-            special: `${BASE_URL}/power_void_special.png`
+            basic: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/skills/void/basic.png',
+            power: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/skills/void/power.png',
+            special: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/skills/void/special.png'
         },
         shinobi: {
-            basic: `${BASE_URL}/power_shinobi_basic.png`,
-            power: `${BASE_URL}/power_shinobi_power.png`,
-            special: `${BASE_URL}/power_shinobi_special.png`
+            basic: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/skills/shinobi/basic.png',
+            power: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/skills/shinobi/power.png',
+            special: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/skills/shinobi/special.png'
         },
         alma_naciente: {
-            basic: `${BASE_URL}/power_alma_naciente_basic.png`,
-            power: `${BASE_URL}/power_alma_naciente_power.png`,
-            special: `${BASE_URL}/power_alma_naciente_special.png`
+            basic: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/skills/alma_naciente/basic.png',
+            power: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/skills/alma_naciente/power.png',
+            special: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/skills/alma_naciente/special.png'
         },
         nigromante: {
-            basic: `${BASE_URL}/power_nigromante_basic.png`,
-            power: `${BASE_URL}/power_nigromante_power.png`,
-            special: `${BASE_URL}/power_nigromante_special.png`
+            basic: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/skills/nigromante/basic.png',
+            power: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/skills/nigromante/power.png',
+            special: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/skills/nigromante/special.png'
         },
         ancestral: {
-            basic: `${BASE_URL}/power_ancestral_basic.png`,
-            power: `${BASE_URL}/power_ancestral_power.png`,
-            special: `${BASE_URL}/power_ancestral_special.png`
+            basic: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/skills/ancestral/basic.png',
+            power: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/skills/ancestral/power.png',
+            special: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/skills/ancestral/special.png'
         }
     }
 };
@@ -90,7 +90,7 @@ const RACES = {
         name: "Humanos",
         emoji: "<:HumanosRazasPassQuirk:1443592330014883840>",
         description: "Versátiles y equilibrados. Se adaptan a cualquier situación.",
-        image: 'e:\\PassQuirk\\PassQuirkRPG\\Documentación - Juego\\Assets - PassQuirkRPG\\Razas\\Humanos - Razas - PassQuirk.png',
+        image: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/races/humanos.png',
         multipliers: {
             hp: 1.10,
             mp: 1.10,
@@ -106,7 +106,7 @@ const RACES = {
         name: "Ogros",
         emoji: "<:ogros:1442155305491234947>",
         description: "Fuerza bruta y resistencia inigualable.",
-        image: 'e:\\PassQuirk\\PassQuirkRPG\\Documentación - Juego\\Assets - PassQuirkRPG\\Razas\\Ogros - Razas - PassQuirk.png',
+        image: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/races/ogros.png',
         multipliers: {
             hp: 1.40,
             mp: 1.30,
@@ -122,7 +122,7 @@ const RACES = {
         name: "Elfos",
         emoji: "<:elfos:1442155303985610762>",
         description: "Ágiles y afines a la magia y la naturaleza.",
-        image: 'e:\\PassQuirk\\PassQuirkRPG\\Documentación - Juego\\Assets - PassQuirkRPG\\Razas\\Elfos - Razas - PassQuirk.png',
+        image: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/races/elfos.png',
         multipliers: {
             hp: 0.75,
             mp: 1.0, // Base MP no cambia segun doc (solo regen)
@@ -139,7 +139,7 @@ const RACES = {
         name: "Enanos",
         emoji: "<:enanos:1442155302651822250>",
         description: "Resistentes y expertos en forja y tecnología.",
-        image: 'e:\\PassQuirk\\PassQuirkRPG\\Documentación - Juego\\Assets - PassQuirkRPG\\Razas\\Enanos - Razas - PassQuirk.png',
+        image: 'https://ahsiiqqvbpgcljvkhlgq.supabase.co/storage/v1/object/public/images/races/enanos.png',
         multipliers: {
             hp: 0.80,
             mp: 1.0,
@@ -156,48 +156,53 @@ const RACES = {
 // 🎮 Clases Base del Juego (Actualizadas con datos de GitBook y estadisticas.md)
 const BASE_CLASSES = {
     "CELESTIAL": {
-        emoji: "<:celestial:1441941085436776608>",
+        emoji: "<:CelesitalClasePassQuirk:1441941085436776608>",
         description: "Soporte + DPS Mágico. Magia Sagrada + Área.",
         image: ASSETS.classes.celestial,
         role: "Soporte + DPS Mágico",
         style: "Magia Sagrada + Área",
-        // Stats derivados de estadisticas.md
         baseStats: { hp: 100, mp: 100, attack: 10, defense: 7, speed: 10 },
         statsImage: ASSETS.stats.celestial,
         abilities: {
             basic: { 
                 name: "Rayo Sagrado", 
+                emoji: "<:RayoSagrado:1441983138782904461>",
                 damage: "150% ATK", 
                 cost: 10, 
                 target: "1 enemigo", 
                 cooldown: 0, 
                 image: ASSETS.powers.celestial.basic,
-                crit: "300% ATK"
+                crit: "300% ATK",
+                unlockLevel: 5
             },
             power: { 
                 name: "Destello Divino", 
+                emoji: "<:DestelloDivino:1441983178557489173>",
                 damage: "280% ATK", 
                 effect: "Cura 15% HP máx aliado", 
                 cost: 30, 
                 target: "1 enemigo + 1 aliado", 
                 cooldown: 2, 
                 image: ASSETS.powers.celestial.power,
-                crit: "560% ATK"
+                crit: "560% ATK",
+                unlockLevel: 10
             },
             special: { 
                 name: "Juicio Celestial", 
+                emoji: "<:JuicioCelestial:1441993545216032768>",
                 damage: "450% ATK (Dividido)", 
                 effect: "Purifica 1 buff enemigo", 
                 cost: 70, 
                 target: "Todos (Área)", 
                 cooldown: 5, 
                 image: ASSETS.powers.celestial.special,
-                crit: "900% ATK"
+                crit: "900% ATK",
+                unlockLevel: 15
             }
         }
     },
     "FÉNIX": {
-        emoji: "<:fenix:1441938882206765247>",
+        emoji: "<:FnixClasePassQuirk:1441938882206765247>",
         description: "DPS + Supervivencia. Fuego + Regeneración.",
         image: ASSETS.classes.fenix,
         role: "DPS + Supervivencia",
@@ -207,37 +212,43 @@ const BASE_CLASSES = {
         abilities: {
             basic: { 
                 name: "Garra Ígnea", 
+                emoji: "<:Garragnea:1441983137679671438>",
                 damage: "150% ATK", 
                 cost: 12, 
                 target: "1 enemigo", 
                 cooldown: 0, 
                 image: ASSETS.powers.fenix.basic,
-                crit: "300% ATK"
+                crit: "300% ATK",
+                unlockLevel: 5
             },
             power: { 
                 name: "Llamarada Vital", 
+                emoji: "<:LlamaradaVital:1441983176481177620>",
                 damage: "250% ATK", 
                 effect: "Quema (50% ATK/turno x2) + Cura 10% HP máx (1 vez)", 
                 cost: 30, 
                 target: "1 enemigo", 
                 cooldown: 3, 
                 image: ASSETS.powers.fenix.power,
-                crit: "500% ATK"
+                crit: "500% ATK",
+                unlockLevel: 10
             },
             special: { 
                 name: "Renacimiento en Cenizas", 
+                emoji: "<:RenacimientoenCenizas:1441993544272445543>",
                 damage: "400% ATK", 
                 effect: "Pasiva: Revive con 35% HP (1 vez)", 
                 cost: 70, 
                 target: "Todos (Área)", 
                 cooldown: 6, 
                 image: ASSETS.powers.fenix.special,
-                crit: "800% ATK"
+                crit: "800% ATK",
+                unlockLevel: 15
             }
         }
     },
     "VOID": {
-        emoji: "<:void:1441941115543752755>",
+        emoji: "<:VoidClasePassQuirk:1441941115543752755>",
         description: "DPS Largo Alcance. Magia Espacial + Penetración.",
         image: ASSETS.classes.void,
         role: "DPS Largo Alcance",
@@ -247,37 +258,43 @@ const BASE_CLASSES = {
         abilities: {
             basic: { 
                 name: "Pulso del Vacío", 
+                emoji: "<:PulsodelVaco:1441983136316784642>",
                 damage: "150% ATK", 
                 cost: 10, 
                 target: "1 enemigo", 
                 cooldown: 0, 
                 image: ASSETS.powers.void.basic,
-                crit: "300% ATK"
+                crit: "300% ATK",
+                unlockLevel: 5
             },
             power: { 
                 name: "Grieta Espacial", 
+                emoji: "<:GrietaEspacial:1441983175399047228>",
                 damage: "360% ATK (3 rayos x 120%)", 
                 effect: "Ignora 15% DEF", 
                 cost: 30, 
                 target: "1-3 enemigos", 
                 cooldown: 3, 
                 image: ASSETS.powers.void.power,
-                crit: "240% ATK por rayo"
+                crit: "240% ATK por rayo",
+                unlockLevel: 10
             },
             special: { 
                 name: "Colapso Gravitatorio", 
+                emoji: "<:ColapsoGravitatorio:1441993542775078974>",
                 damage: "450% ATK", 
                 effect: "-30% Velocidad x 2 turnos", 
                 cost: 70, 
                 target: "Todos (Área)", 
                 cooldown: 6, 
                 image: ASSETS.powers.void.special,
-                crit: "900% ATK"
+                crit: "900% ATK",
+                unlockLevel: 15
             }
         }
     },
     "SHINOBI": {
-        emoji: "<:shinobi:1441941114771734630>",
+        emoji: "<:ShinobiClasePassQuirk:1441941114771734630>",
         description: "Asesino + Movilidad. Cuerpo a Cuerpo + Magia.",
         image: ASSETS.classes.shinobi,
         role: "Asesino + Movilidad",
@@ -287,37 +304,43 @@ const BASE_CLASSES = {
         abilities: {
             basic: { 
                 name: "Corte Sombra", 
+                emoji: "<:CorteSombra:1441983134852710400>",
                 damage: "150% ATK", 
                 cost: 15, 
                 target: "1 enemigo", 
                 cooldown: 0, 
                 image: ASSETS.powers.shinobi.basic,
-                crit: "300% ATK (20% Prob Base)"
+                crit: "300% ATK (20% Prob Base)",
+                unlockLevel: 5
             },
             power: { 
                 name: "Sombra Ígnea", 
+                emoji: "<:Sombragnea:1441983174132633610>",
                 damage: "280% ATK", 
                 effect: "Gana +20% Evasión vs próximo ataque", 
                 cost: 30, 
                 target: "1 enemigo", 
                 cooldown: 2, 
                 image: ASSETS.powers.shinobi.power,
-                crit: "560% ATK (35% Prob)"
+                crit: "560% ATK (35% Prob)",
+                unlockLevel: 10
             },
             special: { 
                 name: "Espada Planetaria", 
+                emoji: "<:EspadaPlanetaria:1441993540535193723>",
                 damage: "500% ATK", 
                 effect: "Atraviesa (100% / 60%)", 
                 cost: 70, 
                 target: "Línea (Max 2)", 
                 cooldown: 5, 
                 image: ASSETS.powers.shinobi.special,
-                crit: "GARANTIZADO 1000% ATK"
+                crit: "GARANTIZADO 1000% ATK",
+                unlockLevel: 15
             }
         }
     },
     "ALMA NACIENTE": {
-        emoji: "<:alma_naciente:1441941113555521677>",
+        emoji: "<:AlmanacienteClasePassQui:1441941113555521677>",
         description: "Bruiser + Ki. Ki + Magia Oscura.",
         image: ASSETS.classes.alma_naciente,
         role: "Bruiser + Ki",
@@ -327,37 +350,43 @@ const BASE_CLASSES = {
         abilities: {
             basic: { 
                 name: "Puño Ki", 
+                emoji: "<:PuoKi:1441983132898169034>",
                 damage: "150% ATK", 
                 cost: 12, 
                 target: "1 enemigo", 
                 cooldown: 0, 
                 image: ASSETS.powers.alma_naciente.basic,
-                crit: "300% ATK"
+                crit: "300% ATK",
+                unlockLevel: 5
             },
             power: { 
                 name: "Energía de Ki", 
+                emoji: "<:EnergadeKi:1441983172803035187>",
                 damage: "360-480% ATK (3 golpes aleatorios)", 
                 effect: "Recupera 15 Energía", 
                 cost: 30, 
                 target: "1 enemigo", 
                 cooldown: 3, 
                 image: ASSETS.powers.alma_naciente.power,
-                crit: "Cada golpe x2"
+                crit: "Cada golpe x2",
+                unlockLevel: 10
             },
             special: { 
                 name: "Cataclismo Cósmico", 
+                emoji: "<:CataclismoCosmica:1441993539209793637>",
                 damage: "350% ATK Base", 
                 effect: "+1.5% daño por 1% HP perdido", 
                 cost: 70, 
                 target: "1 enemigo", 
                 cooldown: 6, 
                 image: ASSETS.powers.alma_naciente.special,
-                crit: "Base x2 + Escalado"
+                crit: "Base x2 + Escalado",
+                unlockLevel: 15
             }
         }
     },
     "NIGROMANTE": {
-        emoji: "<:nigromante:1441941112301289523>",
+        emoji: "<:NicromanteClasePassQuirk:1441941112301289523>",
         description: "Tanque + Invocación. Magia Negra + Sacrificio.",
         image: ASSETS.classes.nigromante,
         role: "Tanque + Invocación",
@@ -367,37 +396,43 @@ const BASE_CLASSES = {
         abilities: {
             basic: { 
                 name: "Orbe Necrótico", 
+                emoji: "<:OrbeNecrtico:1441983131870564483>",
                 damage: "150% ATK", 
                 cost: 10, 
                 target: "1 enemigo", 
                 cooldown: 0, 
                 image: ASSETS.powers.nigromante.basic,
-                crit: "300% ATK"
+                crit: "300% ATK",
+                unlockLevel: 5
             },
             power: { 
                 name: "Magia Negra", 
+                emoji: "<:MgiadelAnteceso:1441983171775434773>",
                 damage: "300% ATK", 
                 effect: "Lifesteal 12% + Stack Esencia", 
                 cost: 30, 
                 target: "1 enemigo", 
                 cooldown: 2, 
                 image: ASSETS.powers.nigromante.power,
-                crit: "600% ATK"
+                crit: "600% ATK",
+                unlockLevel: 10
             },
             special: { 
                 name: "Invocación de Muerte", 
+                emoji: "<:InvocacindeMuerte:14419935383120773957>",
                 damage: "550% ATK", 
                 effect: "Ejecuta si HP < 25%. Coste: 35% HP + 3 Esencias", 
                 cost: 70, 
                 target: "1 enemigo", 
                 cooldown: 8, 
                 image: ASSETS.powers.nigromante.special,
-                crit: "1100% ATK"
+                crit: "1100% ATK",
+                unlockLevel: 15
             }
         }
     },
     "ANCESTRAL": {
-        emoji: "<:ancestral:1441941110648995891>",
+        emoji: "<:AncestralClasePassQuirk:1441941110648995891>",
         description: "Counter Universal + Híbrido. Adaptativo + Magia Antigua.",
         image: ASSETS.classes.ancestral,
         role: "Counter Universal + Híbrido",
@@ -408,32 +443,38 @@ const BASE_CLASSES = {
         abilities: {
             basic: { 
                 name: "Golpe Primordial", 
+                emoji: "<:GolpePrimordial:1441983130633502860>",
                 damage: "180% ATK", 
                 cost: 10, 
                 target: "1 enemigo", 
                 cooldown: 0, 
                 image: ASSETS.powers.ancestral.basic,
-                crit: "360% ATK"
+                crit: "360% ATK",
+                unlockLevel: 5
             },
             power: { 
                 name: "Magia del Antecesor", 
+                emoji: "<:MgiadelAnteceso:1441983170550694081>",
                 damage: "320% ATK", 
                 effect: "Ignora 25% DEF + Counter Pasivo", 
                 cost: 30, 
                 target: "1 enemigo", 
                 cooldown: 2, 
                 image: ASSETS.powers.ancestral.power,
-                crit: "640% ATK"
+                crit: "640% ATK",
+                unlockLevel: 10
             },
             special: { 
                 name: "7 Caminos Antiguos", 
+                emoji: "<:CaminosAntiguos:1441993537196658758>",
                 damage: "Combo 7 Golpes", 
                 effect: "Secuencia de efectos de todas las clases", 
                 cost: 70, 
                 target: "1 enemigo + Área", 
                 cooldown: 7, 
                 image: ASSETS.powers.ancestral.special,
-                crit: "Variado"
+                crit: "Variado",
+                unlockLevel: 15
             }
         }
     }
@@ -485,7 +526,8 @@ const ENEMIES_BY_ZONE = {
     reino_mirai: {
         name: "Reino Mirai (Humanos)",
         emoji: "👤",
-        level_range: "100+",
+        race: "HUMANOS",
+        level_range: "1-99",
         enemies: {
             ladron_callejero: { name: "Ladrón Callejero", level: "1-99", rarity: "Mundano", emoji: "🗡️" },
             rata_mutante: { name: "Rata Mutante", level: "1-99", rarity: "Mundano", emoji: "🐀" },
@@ -495,7 +537,8 @@ const ENEMIES_BY_ZONE = {
     reino_kyojin: {
         name: "Reino Kyojin (Ogros)",
         emoji: "🧌",
-        level_range: "100+",
+        race: "OGROS",
+        level_range: "1-99",
         enemies: {
             elemental_fuego_menor: { name: "Elemental de Fuego Menor", level: "1-99", rarity: "Mundano", emoji: "🔥" },
             bestia_magma: { name: "Bestia de Magma", level: "1-99", rarity: "Refinado", emoji: "🌋" }
@@ -504,7 +547,8 @@ const ENEMIES_BY_ZONE = {
     reino_kogane: {
         name: "Reino Kogane (Enanos)",
         emoji: "🪓",
-        level_range: "100+",
+        race: "ENANOS",
+        level_range: "1-99",
         enemies: {
             golem_piedra: { name: "Golem de Piedra", level: "1-99", rarity: "Mundano", emoji: "🪨" },
             insecto_gigante: { name: "Insecto Gigante", level: "1-99", rarity: "Refinado", emoji: "🐛" }
@@ -513,7 +557,8 @@ const ENEMIES_BY_ZONE = {
     reino_seirei: {
         name: "Reino Seirei (Elfos)",
         emoji: "🧝",
-        level_range: "100+",
+        race: "ELFOS",
+        level_range: "1-99",
         enemies: {
             espiritu_bosque: { name: "Espíritu del Bosque", level: "1-99", rarity: "Mundano", emoji: "🍃" },
             guardian_ancestral: { name: "Guardián Ancestral", level: "1-99", rarity: "Refinado", emoji: "🛡️" }

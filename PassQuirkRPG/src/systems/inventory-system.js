@@ -21,17 +21,19 @@ class InventorySystem {
         this.itemData = gameManager.gameData.ITEMS;
 
         // Configuración del inventario
-        this.maxItemsPerPage = 5;
-        this.defaultSlots = 20;
+        this.maxItemsPerPage = 15; // Aumentado de 5 a 15 como solicitado
+        this.defaultSlots = 50;   // Aumentado de 20 a 50 como solicitado
 
-        // Categorías de objetos
+        // Categorías de objetos (Actualizadas)
         this.categories = {
             all: { name: 'Todos los items', emoji: '🎒' },
             consumible: { name: 'Consumibles', emoji: '🧪' },
-            arma: { name: 'Armas', emoji: '⚔️' },
-            armadura: { name: 'Armaduras', emoji: '🛡️' },
-            accesorio: { name: 'Accesorios', emoji: '💍' },
-            especial: { name: 'Especiales', emoji: '🌟' }
+            material: { name: 'Materiales', emoji: '🪵' },
+            tool: { name: 'Herramientas', emoji: '🛠️' },
+            weapon: { name: 'Armas', emoji: '⚔️' },
+            armor: { name: 'Armaduras', emoji: '🛡️' },
+            accessory: { name: 'Accesorios', emoji: '💍' },
+            // Eliminada 'especial' como categoría genérica, usamos tipos reales
         };
     }
 
@@ -54,6 +56,9 @@ class InventorySystem {
         // El método getInventory del playerDB debe estar implementado para leer de la tabla relacional
         const inventoryItems = await this.gameManager.playerDB.getInventory(userId);
         
+        // DEBUG: Verificar items cargados
+        console.log(`[InventorySystem] Loaded ${inventoryItems.length} items for user ${userId}`);
+
         // Cargar equipamiento (puede seguir en JSON o migrar a tabla si se desea, por ahora asumimos JSON en player.inventory.equipment)
         const equipment = player.inventory?.equipment || {};
         const gold = player.gold || 0; // Usar columna gold de players
@@ -68,29 +73,32 @@ class InventorySystem {
         const endIndex = Math.min(startIndex + this.maxItemsPerPage, items.length);
         const displayedItems = items.slice(startIndex, endIndex);
 
-        // Crear el embed del inventario
+        // Crear Embed
         const embed = new OfficialEmbedBuilder()
             .setOfficialStyle('inventory')
-            .setOfficialTitle(`Inventario`, EMOJIS.INVENTORY)
-            .setOfficialDescription(`Aquí puedes ver y gestionar tus objetos.\n\n**Categoría:** ${this.categories[category].emoji} ${this.categories[category].name}\n**PassCoins:** ${EMOJIS.GOLD} ${gold.toLocaleString()}\n**Espacio:** ${inventoryItems.length}/${this.getInventoryCapacity(player)} objetos`);
+            .setOfficialTitle(`Inventario`, this.categories[category].emoji)
+            .setOfficialDescription(`Aquí puedes ver y gestionar tus objetos.`);
+
+        // Info de cabecera
+        embed.addOfficialField('Categoría', `${this.categories[category].emoji} ${this.categories[category].name}`, true);
+        embed.addOfficialField('PassCoins', `${gold.toLocaleString()} ${EMOJIS.GOLD || '💰'}`, true);
+        embed.addOfficialField('Espacio', `${inventoryItems.length}/${this.getInventoryCapacity(player)} objetos`, true);
 
         // Añadir items a mostrar
         if (displayedItems.length > 0) {
-            for (const itemInfo of displayedItems) {
-                const { itemId, item, quantity } = itemInfo;
-                const isEquipped = this.isItemEquipped(equipment, itemId);
-                const equipStatus = isEquipped ? ' (Equipado)' : '';
+            // Lista vertical limpia (sin campos individuales para ahorrar espacio y ser más legible)
+            let inventoryList = '';
+            
+            for (const { itemId, item, quantity } of displayedItems) {
+                const equipStatus = this.isItemEquipped(player.inventory.equipment || {}, itemId) ? ' (Equipado)' : '';
+                const rarityEmoji = item.rarityEmoji || ''; 
                 
-                // Formato: Rareza primero (solo emoji) + Nombre
-                const rarityEmoji = item.rarityEmoji || '⚪'; 
-                
-                embed.addOfficialField(
-                    `${rarityEmoji} ${item.name}${equipStatus}`,
-                    `**Tipo:** ${this.getItemTypeEmoji(item.type)} ${this.capitalizeFirstLetter(item.type)}\n` +
-                    `**Cantidad:** x${quantity}`,
-                    false
-                );
+                // Formato lineal: [Emoji] *Nombre* `xN`
+                inventoryList += `${rarityEmoji} \`${item.name}\` \`x${quantity}\`${equipStatus}\n`;
             }
+            
+            embed.setOfficialDescription(`Aquí puedes ver y gestionar tus objetos.\n\n${inventoryList}`);
+            
         } else {
             embed.addOfficialField(
                 '📦 Inventario Vacío',
@@ -105,16 +113,21 @@ class InventorySystem {
         const components = [];
 
         // Menú de categorías (filtrar la categoría actual)
+        // Modificación: Mostrar siempre todas las categorías, no filtrar la actual.
+        // Esto permite que si seleccionas "Consumibles" y quieres volver a "Todos", puedas hacerlo.
         const categoryMenu = new OfficialSelectMenuBuilder('inventory_category')
-            .addInventoryCategories(category); // Pasar categoría actual para excluirla
+            .addInventoryCategories(); // No pasamos categoría para excluir, queremos todas
         components.push(new ActionRowBuilder().addComponents(categoryMenu.menu));
 
         // Botones de acción para el inventario
         if (displayedItems.length > 0) {
-            const actionButtons = new OfficialButtonBuilder()
-                .addInventoryButtons()
+            // ... código de botones
+        } else if (category !== 'all') {
+            // Si no hay items en la categoría pero no es 'all', mostrar botón para volver a 'all'
+            const resetFilter = new OfficialButtonBuilder()
+                .addOfficialButton('inventory_category_all', 'Ver Todos', 'secondary', '🎒')
                 .buildRows();
-            components.push(...actionButtons);
+            components.push(...resetFilter);
         }
 
         // Botones de navegación si hay múltiples páginas
@@ -156,17 +169,57 @@ class InventorySystem {
         // Asumimos que GM tiene un caché de items o los cargamos bajo demanda
         // Para eficiencia, GM debería tener `gameData.ITEMS` poblado desde `public.items` al inicio
         
+        // Importar RARITIES si no está disponible en el scope
+        const RARITIES = require('../data/rarities');
+
         for (const entry of inventoryItems) {
             const itemId = entry.item_key;
             const quantity = entry.quantity;
-            
-            // Buscar definición del item
+
+            // Asegurar que this.gameManager.gameData.ITEMS está inicializado
+            if (!this.gameManager.gameData.ITEMS) {
+                this.gameManager.gameData.ITEMS = {};
+            }
+
             let item = this.gameManager.gameData.ITEMS[itemId];
             
-            // Si no está en caché (nuevo item en DB), intentar cargarlo o usar placeholder
+            // Fallback crítico: si no está en gameData, construirlo con la info mínima disponible
             if (!item) {
-                // TODO: Implementar carga dinámica si falta
-                continue; 
+                // Intentar obtener datos del join de DB (entry.item)
+                const dbItem = entry.item || {};
+                
+                // Si ni siquiera hay datos de DB, usar el ID como nombre (evita crash)
+                const name = dbItem.name || itemId.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                
+                // Resolver rareza de forma segura
+                let rarityVal = dbItem.rarity_id || 'mundano';
+                if (typeof rarityVal !== 'string') {
+                    // Si es objeto (por join), intentar sacar name o key
+                    rarityVal = rarityVal.name || rarityVal.key || 'mundano';
+                }
+                const rarityKey = String(rarityVal).toLowerCase();
+                
+                const rarityData = RARITIES[rarityKey] || RARITIES['mundano'];
+
+                item = {
+                    id: itemId,
+                    name: name,
+                    type: this.mapDbCategory(dbItem.category) || 'material',
+                    rarity: rarityData.name, 
+                    emoji: '📦', // Emoji genérico
+                    description: 'Objeto misterioso.',
+                    rarityEmoji: rarityData.emoji
+                };
+                
+                // Guardar en caché temporal para esta ejecución para evitar reconstruir
+                this.gameManager.gameData.ITEMS[itemId] = item;
+            } else if (!item.rarityEmoji) {
+                // Si el item existe pero no tiene emoji de rareza (datos antiguos/cacheados)
+                const rarityKey = (item.rarity || item.rarityId || 'mundano').toLowerCase();
+                const rarityData = RARITIES[rarityKey] || RARITIES['mundano'];
+                item.rarityEmoji = rarityData.emoji;
+                // Asegurar nombre de rareza correcto también
+                if (!item.rarity) item.rarity = rarityData.name;
             }
 
             if (category === 'all' || item.type === category) {
@@ -180,12 +233,26 @@ class InventorySystem {
             if (a.item.type !== b.item.type) {
                 return a.item.type.localeCompare(b.item.type);
             }
-            // Luego por rareza (descendente)
-            // Asumiendo rarity es string o ID, ajustar comparación
-            // if (a.item.rarity !== b.item.rarity) { ... }
-            // Finalmente por nombre
+            // Luego por nombre
             return a.item.name.localeCompare(b.item.name);
         });
+    }
+
+    mapDbCategory(cat) {
+        if (!cat) return 'material'; // Default a material si no hay categoría
+        const key = String(cat).toLowerCase();
+        
+        const map = {
+            consumible: 'consumible',
+            material: 'material',
+            tool: 'tool',
+            fish: 'consumible', // Peces son consumibles o materiales
+            weapon: 'weapon',
+            armor: 'armor',
+            accessory: 'accessory',
+            special: 'material' // Mapear especial a material para evitar categoría fantasma
+        };
+        return map[key] || 'material';
     }
 
     /**
@@ -227,16 +294,7 @@ class InventorySystem {
     getInventoryCapacity(player) {
         // Capacidad base + bonificaciones
         let capacity = this.defaultSlots;
-
-        // Añadir bonificaciones de habilidades, quirks, etc.
-        if (player.quirks) {
-            for (const quirk of player.quirks) {
-                if (quirk.bonuses && quirk.bonuses.inventorySlots) {
-                    capacity += quirk.bonuses.inventorySlots;
-                }
-            }
-        }
-
+        // Lógica simple por ahora
         return capacity;
     }
 
@@ -460,10 +518,11 @@ class InventorySystem {
     getItemTypeEmoji(type) {
         const typeEmojis = {
             consumible: '🧪',
-            arma: '⚔️',
-            armadura: '🛡️',
-            accesorio: '💍',
-            especial: '🌟'
+            material: '🪵',
+            tool: '🛠️',
+            weapon: '⚔️',
+            armor: '🛡️',
+            accessory: '💍'
         };
 
         return typeEmojis[type] || '📦';

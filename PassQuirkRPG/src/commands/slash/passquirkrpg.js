@@ -72,16 +72,14 @@ const CLASES_OFICIALES = Object.entries(BASE_CLASSES).reduce((acc, [key, val]) =
         emoji: val.emoji,
         desc: val.description,
         role: val.role,
+        style: val.style,
         baseStats: val.baseStats, // Preservar objeto original para compatibilidad
         statsImage: val.statsImage, // URL de imagen de estadísticas
         stats: { hp: val.baseStats.hp, energy: val.baseStats.mp, atk: val.baseStats.attack, def: val.baseStats.defense, spd: val.baseStats.speed },
-        abilities: [
-            { name: val.abilities.basic.name, type: 'Básico', dmg: val.abilities.basic.damage, desc: val.abilities.basic.effect || '', cost: val.abilities.basic.cost, target: val.abilities.basic.target },
-            { name: val.abilities.power.name, type: 'Poder', dmg: val.abilities.power.damage, desc: val.abilities.power.effect || '', cost: val.abilities.power.cost, target: val.abilities.power.target },
-            { name: val.abilities.special.name, type: 'Especial', dmg: val.abilities.special.damage, desc: val.abilities.special.effect || '', cost: val.abilities.special.cost, target: val.abilities.special.target }
-        ],
+        abilities: val.abilities, // Pasar el objeto completo de habilidades (con emojis y datos)
         icon: val.image, // URL
-        banner: val.image // URL (Usamos la imagen de clase como banner/main image)
+        banner: val.image, // URL (Usamos la imagen de clase como banner/main image)
+        image: val.image // Propiedad image explícita
     };
     return acc;
 }, {});
@@ -502,6 +500,8 @@ async function mostrarModalAspecto(interaction) {
     else await interaction.reply(mensaje);
 }
 
+const axios = require('axios');
+
 // Nueva función para manejar la subida de imágenes por mensaje
 async function solicitarImagenPorMensaje(interaction) {
     if (!interaction.deferred && !interaction.replied) await interaction.deferUpdate();
@@ -524,14 +524,37 @@ async function solicitarImagenPorMensaje(interaction) {
     collector.on('collect', async m => {
         const attachment = m.attachments.first();
         const imageUrl = attachment.url;
+        let finalUrl = imageUrl;
         
+        // Intentar subir a Supabase para persistencia
+        try {
+            const playerDB = getPlayerDB(interaction);
+            if (playerDB && process.env.SUPABASE_URL && process.env.SUPABASE_KEY) {
+                await interaction.followUp({ content: '⏳ Procesando imagen...', ephemeral: true });
+                const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
+                const buffer = Buffer.from(response.data, 'binary');
+                const filename = attachment.name || `avatar_${Date.now()}.png`;
+                const mimeType = attachment.contentType || 'image/png';
+                
+                finalUrl = await playerDB.uploadUserAvatar(interaction.user.id, buffer, filename, mimeType);
+            }
+        } catch (error) {
+            console.error('Error subiendo imagen a Supabase:', error);
+            // Fallback a URL de Discord (advertir expiración)
+        }
+
         // Guardar URL
         let userData = getUserDataSafe(interaction.user.id);
-        userData.imagenUrl = imageUrl;
+        userData.imagenUrl = finalUrl;
         datosPersonaje.set(interaction.user.id, userData);
         
-        // Borrar mensaje del usuario para limpieza (opcional, requiere permisos)
-        try { await m.delete(); } catch (e) {}
+        // Borrar mensaje del usuario para limpieza (opcional)
+        // NOTA: Si falló la subida a Supabase, borrar el mensaje romperá la URL de Discord eventualmente.
+        // Por seguridad, solo borramos si tenemos URL de Supabase, o aceptamos el riesgo.
+        // Para este caso, mejor NO borrar el mensaje si usamos la URL original.
+        if (finalUrl !== imageUrl) {
+             try { await m.delete(); } catch (e) {}
+        }
 
         // Avanzar
         await procesarAspecto(interaction); 
@@ -703,9 +726,9 @@ async function mostrarDetalleClase(interaction, claseId) {
     let habilidadesInfo = '';
     if (claseData.abilities) {
         habilidadesInfo += `\n\n**✨ Habilidades Iniciales:**\n`;
-        if (claseData.abilities.basic) habilidadesInfo += `🔸 **${claseData.abilities.basic.name}**: ${claseData.abilities.basic.damage}\n`;
-        if (claseData.abilities.power) habilidadesInfo += `🔹 **${claseData.abilities.power.name}**: ${claseData.abilities.power.damage}\n`;
-        if (claseData.abilities.special) habilidadesInfo += `💥 **${claseData.abilities.special.name}**: ${claseData.abilities.special.damage}\n`;
+        if (claseData.abilities.basic) habilidadesInfo += `${claseData.abilities.basic.emoji || '🔸'} **${claseData.abilities.basic.name}**: ${claseData.abilities.basic.damage}\n`;
+        if (claseData.abilities.power) habilidadesInfo += `${claseData.abilities.power.emoji || '🔹'} **${claseData.abilities.power.name}**: ${claseData.abilities.power.damage}\n`;
+        if (claseData.abilities.special) habilidadesInfo += `${claseData.abilities.special.emoji || '💥'} **${claseData.abilities.special.name}**: ${claseData.abilities.special.damage}\n`;
     }
 
     const mensaje = generarMensajeEmbed({
@@ -1102,16 +1125,27 @@ async function completarTutorial(interaction) {
     // Obtener stats finales (ya calculados o calcularlos ahora)
     const finalStats = userData.stats || calculateStats(userData.clase.baseStats, userData.razaId || 'HUMANOS', 1);
 
+    const { BASE_CLASSES } = require('../../data/passquirk-official-data');
+
+    // Normalizar clase a clave oficial
+    let classKey = userData.claseId;
+    if (classKey) {
+        const normalized = String(classKey).toLowerCase();
+        const match = Object.keys(BASE_CLASSES).find(k => k.toLowerCase() === normalized || k.toLowerCase().replace(/\s+/g, '_') === normalized);
+        if (match) classKey = match;
+    }
+
     const newPlayer = {
         userId: interaction.user.id,
         username: userData.nombre || interaction.user.username,
         level: 1,
         experience: 0,
         nextLevelExp: 100,
-        class: userData.claseId,
+        class: classKey,
         race: userData.razaId || 'HUMANOS', // Campo raza
         kingdom: userData.reinoId || 'akai', // Reino elegido
         gender: userData.genero || 'No especificado',
+        profileIcon: userData.imagenUrl || null, // Guardar icono personalizado
         stats: {
             hp: finalStats.hp, maxHp: finalStats.hp,
             mp: finalStats.mp, maxMp: finalStats.mp,

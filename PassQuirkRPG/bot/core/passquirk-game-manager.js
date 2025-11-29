@@ -26,6 +26,9 @@ class PassQuirkGameManager {
             quirks: null,      // Sistema de quirks
             shop: null,        // Sistema de tienda
             quests: null,      // Sistema de misiones
+            world: null,       // Sistema de mundo
+            level: null,       // Sistema de niveles
+            notification: null,// Sistema de notificaciones
             dialogue: null     // Sistema de diálogos
         };
 
@@ -91,6 +94,20 @@ class PassQuirkGameManager {
                 const WorldSystem = require(path.join(systemsPath, 'world-system.js'));
                 this.systems.world = new WorldSystem(this);
                 console.log('🌍 Sistema de mundo cargado');
+            }
+
+            // Cargar sistema de niveles (LevelSystem)
+            if (fs.existsSync(path.join(systemsPath, 'level-system.js'))) {
+                const LevelSystem = require(path.join(systemsPath, 'level-system.js'));
+                this.systems.level = new LevelSystem(this);
+                console.log('🆙 Sistema de niveles cargado');
+            }
+
+            // Cargar sistema de notificaciones (NotificationSystem)
+            if (fs.existsSync(path.join(systemsPath, 'notification-system.js'))) {
+                const NotificationSystem = require(path.join(systemsPath, 'notification-system.js'));
+                this.systems.notification = new NotificationSystem(this.client); // Pass client directly as it uses it
+                console.log('🔔 Sistema de notificaciones cargado');
             }
 
             // Cargar sistema de diálogos

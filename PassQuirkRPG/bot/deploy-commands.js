@@ -80,6 +80,22 @@ async function deployCommands() {
     try {
         console.log('🚀 Iniciando despliegue de comandos...');
 
+        // LIMPIEZA PREVENTIVA (Nuclear Option)
+        console.log('☢️ Ejecutando limpieza nuclear de comandos antiguos...');
+        // 1. Limpiar Globales
+        try {
+            await rest.put(Routes.applicationCommands(process.env.CLIENT_ID), { body: [] });
+            console.log('✅ Comandos Globales limpiados.');
+        } catch (e) { console.log('⚠️ Error limpiando globales (puede ser normal):', e.message); }
+        
+        // 2. Limpiar Guild (si hay ID)
+        if (process.env.GUILD_ID) {
+             try {
+                await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: [] });
+                console.log('✅ Comandos de Guild limpiados.');
+             } catch (e) { console.log('⚠️ Error limpiando guild (puede ser normal):', e.message); }
+        }
+
         let data;
 
         if (process.env.GUILD_ID && process.env.NODE_ENV === 'development') {

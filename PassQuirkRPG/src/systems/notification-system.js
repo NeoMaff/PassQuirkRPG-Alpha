@@ -1,6 +1,6 @@
 const { EmbedBuilder, ChannelType, PermissionFlagsBits } = require('discord.js');
 const { COLORS, EMOJIS } = require('../utils/embedStyles');
-const ABILITIES = require('../data/abilities');
+const OFFICIAL_DATA = require('../data/passquirk-official-data');
 
 /**
  * 🔔 Sistema de Notificaciones de PassQuirk
@@ -16,40 +16,74 @@ class NotificationSystem {
      */
     async checkUnlocks(interaction, player, oldLevel, newLevel) {
         const unlocks = [];
+        const playerClass = typeof player.class === 'string' ? player.class : (player.class?.id || player.class?.name || '');
+        
+        // Normalizar clave para búsqueda insensible a acentos y mayúsculas
+        const normalize = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+        const classKey = normalize(playerClass);
+        
+        // Buscar datos oficiales
+        let classData = OFFICIAL_DATA.BASE_CLASSES[playerClass.toUpperCase()]; // Intento directo
+        if (!classData) {
+             // Búsqueda robusta
+             const k = Object.keys(OFFICIAL_DATA.BASE_CLASSES).find(k => normalize(k) === classKey);
+             if (k) classData = OFFICIAL_DATA.BASE_CLASSES[k];
+        }
 
-        // 1. Verificar Habilidades de Clase (Nivel 5)
+        // 1. Nivel 5: Habilidad Básica + Herramientas
         if (oldLevel < 5 && newLevel >= 5) {
-            let playerClassKey = '';
-            if (typeof player.class === 'object' && player.class !== null) {
-                playerClassKey = player.class.id;
-            } else if (typeof player.class === 'string') {
-                playerClassKey = player.class.toLowerCase().replace(' ', '_');
-            }
-            
-            const ability = ABILITIES[playerClassKey]?.power;
-            
-            if (ability) {
+            // Habilidad Básica
+            if (classData && classData.abilities && classData.abilities.basic) {
+                const ability = classData.abilities.basic;
                 unlocks.push({
                     type: 'skill',
                     title: '✨ Nueva Habilidad Desbloqueada',
                     name: ability.name,
-                    emoji: ability.emoji,
-                    description: `Has aprendido **${ability.name}**.\n${ability.description}`,
+                    emoji: ability.emoji || '✨',
+                    description: `Has aprendido **${ability.name}** (Básica).\n${ability.damage} de daño.`,
                     footer: '¡Úsala en combate!'
                 });
             }
-        }
 
-        // 2. Verificar Herramientas (Nivel 10)
-        if (oldLevel < 10 && newLevel >= 10) {
+            // Herramientas (Minería/Pesca)
             unlocks.push({
                 type: 'feature',
                 title: '⚒️ Herramientas Desbloqueadas',
                 name: 'Minería y Pesca',
                 emoji: '⛏️',
-                description: 'Ahora puedes usar **Picos** y **Cañas**.\n¡Ve a la Tienda en Space Central para comprarlos!',
+                description: 'Ahora puedes usar **Picos** y **Cañas** en tus exploraciones.\n¡Ve a la Tienda en Space Central para comprarlos!',
                 footer: 'Exploración Avanzada'
             });
+        }
+
+        // 2. Nivel 10: Habilidad de Poder
+        if (oldLevel < 10 && newLevel >= 10) {
+            if (classData && classData.abilities && classData.abilities.power) {
+                const ability = classData.abilities.power;
+                unlocks.push({
+                    type: 'skill',
+                    title: '🔥 Habilidad de Poder Desbloqueada',
+                    name: ability.name,
+                    emoji: ability.emoji || '🔥',
+                    description: `Has aprendido **${ability.name}**.\nEfecto: ${ability.effect || 'Daño masivo'}`,
+                    footer: '¡Poder desatado!'
+                });
+            }
+        }
+
+        // 3. Nivel 15: Habilidad Especial
+        if (oldLevel < 15 && newLevel >= 15) {
+            if (classData && classData.abilities && classData.abilities.special) {
+                const ability = classData.abilities.special;
+                unlocks.push({
+                    type: 'skill',
+                    title: '🌟 Habilidad Especial Desbloqueada',
+                    name: ability.name,
+                    emoji: ability.emoji || '🌟',
+                    description: `Has desbloqueado tu técnica definitiva: **${ability.name}**.\n¡Úsala sabiamente!`,
+                    footer: '¡Técnica Definitiva!'
+                });
+            }
         }
 
         // Si hay desbloqueos, notificar
@@ -59,71 +93,42 @@ class NotificationSystem {
     }
 
     /**
-     * Envía las notificaciones (Intenta crear canal privado o usa DM/Ephemeral)
+     * Envía las notificaciones al canal global 🔔-notificaciones
      */
     async sendNotifications(interaction, player, unlocks) {
         const guild = interaction.guild;
-        if (!guild) return; // No funciona en DM directo al bot sin servidor
+        if (!guild) return; 
 
-        // Nombre del canal: notificaciones-usuario
-        const channelName = `notificaciones-${player.username}`.toLowerCase().replace(/[^a-z0-9]/g, '');
+        // Buscar canal global '🔔-notificaciones'
+        let channel = guild.channels.cache.find(c => c.name === '🔔-notificaciones');
         
-        // Buscar si ya existe (o crear)
-        // NOTA: Crear canales por usuario es peligroso en servidores grandes (límite 500).
-        // Se recomienda usar hilos privados o mensajes efímeros.
-        // Siguiendo instrucciones: "automáticamente el bot cree un canal"
-        
-        let channel = guild.channels.cache.find(c => c.name === channelName);
-
         if (!channel) {
-            try {
-                channel = await guild.channels.create({
-                    name: channelName,
-                    type: ChannelType.GuildText,
-                    permissionOverwrites: [
-                        {
-                            id: guild.id,
-                            deny: [PermissionFlagsBits.ViewChannel], // Oculto para todos
-                        },
-                        {
-                            id: player.userId,
-                            allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.ReadMessageHistory], // Visible para el usuario
-                        },
-                        {
-                            id: this.client.user.id,
-                            allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
-                        }
-                    ],
-                    topic: `Buzón de notificaciones para ${player.username}`
-                });
-
-                // 🔔 Mensaje de bienvenida con mención explícita al crear el canal
-                await channel.send(`¡Bienvenido a tu canal de notificaciones, <@${player.userId}>! Aquí recibirás actualizaciones importantes sobre tu progreso.`);
-
-            } catch (error) {
-                console.error('Error creando canal de notificaciones:', error);
-                // Fallback: Enviar al canal actual como ephemeral
-                await this.sendEphemeralNotifications(interaction, unlocks);
-                return;
-            }
+             // Si no existe, intentar buscar en la categoría 🐉 PassQuirk
+             // O delegar al LevelSystem que sabe crearlo (pero aquí solo notificamos si existe)
+             console.warn('Canal 🔔-notificaciones no encontrado. Usando fallback efímero.');
+             await this.sendEphemeralNotifications(interaction, unlocks);
+             return;
         }
 
-        // Enviar embeds al canal
+        // Enviar embeds al canal global con mención
         for (const unlock of unlocks) {
             const embed = new EmbedBuilder()
                 .setColor(COLORS.SUCCESS)
                 .setTitle(unlock.title)
                 .setDescription(`${unlock.emoji} **${unlock.name}**\n\n${unlock.description}`)
-                .setFooter({ text: unlock.footer })
+                .setThumbnail(player.profileIcon || player.avatar_url || interaction.user.displayAvatarURL())
+                .setFooter({ text: `${unlock.footer} • ${player.username}` })
                 .setTimestamp();
 
             await channel.send({ content: `<@${player.userId}>`, embeds: [embed] });
         }
 
-        // Avisar al usuario donde mirar
+        // Avisar al usuario donde mirar (si es interacción directa)
+        /*
         if (interaction.replied || interaction.deferred) {
             await interaction.followUp({ content: `🔔 ¡Tienes nuevas notificaciones en ${channel}!`, ephemeral: true });
         }
+        */
     }
 
     async sendEphemeralNotifications(interaction, unlocks) {
@@ -135,10 +140,14 @@ class NotificationSystem {
                 .setFooter({ text: unlock.footer })
         );
 
-        if (interaction.replied || interaction.deferred) {
-            await interaction.followUp({ embeds, ephemeral: true });
-        } else {
-            await interaction.reply({ embeds, ephemeral: true });
+        try {
+            if (interaction.replied || interaction.deferred) {
+                await interaction.followUp({ embeds, ephemeral: true });
+            } else {
+                await interaction.reply({ embeds, ephemeral: true });
+            }
+        } catch (e) {
+            console.error('Error enviando notificación efímera:', e);
         }
     }
 }
